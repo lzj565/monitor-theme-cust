@@ -92,12 +92,10 @@ function RuntimeStat({ icon: Icon, label, value, tone }: {
   tone: string
 }) {
   return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <Icon className={`size-3.5 ${tone}`} />
-        {label}
-      </div>
-      <div className="tnum mt-1 truncate text-xs font-medium">{value}</div>
+    <div className="flex min-w-0 items-center gap-1.5 text-xs">
+      <Icon className={`size-3.5 shrink-0 ${tone}`} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="tnum truncate font-medium">{value}</span>
     </div>
   )
 }
@@ -171,18 +169,20 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-border/70 bg-control/45 p-3">
-            <RuntimeStat
-              icon={MemoryStick}
-              label="Swap"
-              value={m
+          <div className="mt-4 grid grid-cols-2 gap-x-4">
+            <Meter
+              label={<span className="inline-flex items-center gap-1.5"><MemoryStick className="size-3.5 text-metric-yellow" />Swap</span>}
+              pct={m && m.swap_total > 0 ? percent(m.swap_used, m.swap_total) : null}
+              foot={m
                 ? m.swap_total > 0 ? pair(m.swap_used, m.swap_total) : "未启用"
                 : node.swap_total > 0 ? `— / ${bytes(node.swap_total)}` : "未启用"}
-              tone="text-metric-yellow"
+              tone="yellow"
             />
-            <RuntimeStat icon={Activity} label="进程" value={m?.procs ?? "—"} tone="text-metric-yellow" />
-            <RuntimeStat icon={Network} label="TCP 连接" value={m?.tcp ?? "—"} tone="text-metric-purple" />
-            <RuntimeStat icon={Network} label="UDP 连接" value={m?.udp ?? "—"} tone="text-metric-blue" />
+            <div className="flex min-w-0 flex-col justify-between gap-2">
+              <RuntimeStat icon={Activity} label="进程" value={m?.procs ?? "—"} tone="text-metric-yellow" />
+              <RuntimeStat icon={Network} label="TCP" value={m?.tcp ?? "—"} tone="text-metric-purple" />
+              <RuntimeStat icon={Network} label="UDP" value={m?.udp ?? "—"} tone="text-metric-blue" />
+            </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-4 text-xs">
