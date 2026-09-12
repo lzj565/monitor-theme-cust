@@ -275,7 +275,7 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
   )
 
   return (
-    <div ref={root} className="min-h-px">
+    <div ref={root} className="min-h-px" onClick={(event) => event.stopPropagation()}>
       {targets.length > 0 && (
         <div className="mt-4 space-y-2.5 border-t pt-3" aria-label="网络质量">
           {targets.map((target) => {
