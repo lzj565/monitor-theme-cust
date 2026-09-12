@@ -1,4 +1,4 @@
-import { Activity, ArrowDown, ArrowDownUp, ArrowUp, Gauge, Server } from "lucide-react"
+import { Activity, ArrowDown, ArrowDownUp, ArrowUp, Gauge, Inbox, Send, Server } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import { speedHistory, type Node } from "@/lib/api"
@@ -24,15 +24,24 @@ function Tile({ icon: Icon, label, children, tone }: {
  * Stacked below sm, where two tiles share a phone's width and "23.3 MB" has
  * roughly 70px available.
  */
-function Flow({ down, up, className }: { down: string; up: string; className?: string }) {
+function Flow({ down, up, className, kind = "rate" }: {
+  down: string
+  up: string
+  className?: string
+  kind?: "rate" | "traffic"
+}) {
+  const DownIcon = kind === "rate" ? ArrowDown : Inbox
+  const UpIcon = kind === "rate" ? ArrowUp : Send
   return (
     <div className={cn("tnum grid grid-cols-1 gap-x-2 sm:grid-cols-2", className)}>
       <span className="inline-flex items-center gap-1">
-        <ArrowDown className="size-3 shrink-0 text-metric-green" />
+        <DownIcon className="size-3 shrink-0 text-metric-green" />
+        <span className="text-muted-foreground">{kind === "rate" ? "下行" : "入站"}</span>
         {down}
       </span>
       <span className="inline-flex items-center gap-1">
-        <ArrowUp className="size-3 shrink-0 text-metric-blue" />
+        <UpIcon className="size-3 shrink-0 text-metric-blue" />
+        <span className="text-muted-foreground">{kind === "rate" ? "上行" : "出站"}</span>
         {up}
       </span>
     </div>
@@ -102,9 +111,10 @@ export function Summary({ nodes }: { nodes: Node[] }) {
           down={bytes(sum((n) => n.day_rx))}
           up={bytes(sum((n) => n.day_tx))}
           className="mt-1 text-sm font-semibold"
+          kind="traffic"
         />
         <div className="mt-2 text-xs text-muted-foreground">总流量</div>
-        <Flow down={bytes(sum((n) => n.total_rx))} up={bytes(sum((n) => n.total_tx))} className="mt-0.5 text-sm" />
+        <Flow down={bytes(sum((n) => n.total_rx))} up={bytes(sum((n) => n.total_tx))} className="mt-0.5 text-sm" kind="traffic" />
       </Tile>
 
       <Tile icon={Gauge} label="实时网速" tone="text-metric-blue">

@@ -570,7 +570,7 @@ export function NodeDetail({ node }: { node: Node }) {
       ) : data.metrics.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">这段时间没有历史数据</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Panel
             title="CPU"
             value={m ? `${m.cpu.toFixed(1)}%` : "—"}

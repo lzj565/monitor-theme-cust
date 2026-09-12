@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, MemoryStick } from "lucide-react"
+import { Activity, ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, Inbox, MemoryStick, Network, Send } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -85,6 +85,23 @@ function Expiry({ node }: { node: Node }) {
   )
 }
 
+function RuntimeStat({ icon: Icon, label, value, tone }: {
+  icon: typeof Activity
+  label: string
+  value: React.ReactNode
+  tone: string
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Icon className={`size-3.5 ${tone}`} />
+        {label}
+      </div>
+      <div className="tnum mt-1 truncate text-xs font-medium">{value}</div>
+    </div>
+  )
+}
+
 export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
   const m = node.metrics
 
@@ -154,22 +171,40 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             />
           </div>
 
+          <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-border/70 bg-control/45 p-3">
+            <RuntimeStat
+              icon={MemoryStick}
+              label="Swap"
+              value={m
+                ? m.swap_total > 0 ? pair(m.swap_used, m.swap_total) : "未启用"
+                : node.swap_total > 0 ? `— / ${bytes(node.swap_total)}` : "未启用"}
+              tone="text-metric-yellow"
+            />
+            <RuntimeStat icon={Activity} label="进程" value={m?.procs ?? "—"} tone="text-metric-yellow" />
+            <RuntimeStat icon={Network} label="TCP 连接" value={m?.tcp ?? "—"} tone="text-metric-purple" />
+            <RuntimeStat icon={Network} label="UDP 连接" value={m?.udp ?? "—"} tone="text-metric-blue" />
+          </div>
+
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-4 text-xs">
-            <span className="tnum inline-flex items-center gap-1.5">
+            <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowDown className="size-3 text-metric-green" />
-              {m ? rate(m.net_rx) : "—"}
+              <span className="text-muted-foreground">下行</span>
+              <span className="truncate">{m ? rate(m.net_rx) : "—"}</span>
             </span>
-            <span className="tnum inline-flex items-center gap-1.5">
+            <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowUp className="size-3 text-metric-blue" />
-              {m ? rate(m.net_tx) : "—"}
+              <span className="text-muted-foreground">上行</span>
+              <span className="truncate">{m ? rate(m.net_tx) : "—"}</span>
             </span>
-            <span className="tnum inline-flex items-center gap-1.5 text-muted-foreground">
-              <ArrowDown className="size-3" />
-              {bytes(node.total_rx)}
+            <span className="tnum inline-flex min-w-0 items-center gap-1.5">
+              <Inbox className="size-3 text-metric-green" />
+              <span className="text-muted-foreground">入站</span>
+              <span className="truncate">{bytes(node.total_rx)}</span>
             </span>
-            <span className="tnum inline-flex items-center gap-1.5 text-muted-foreground">
-              <ArrowUp className="size-3" />
-              {bytes(node.total_tx)}
+            <span className="tnum inline-flex min-w-0 items-center gap-1.5">
+              <Send className="size-3 text-metric-blue" />
+              <span className="text-muted-foreground">出站</span>
+              <span className="truncate">{bytes(node.total_tx)}</span>
             </span>
           </div>
         </>
