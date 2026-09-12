@@ -15,6 +15,7 @@ import {
   axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, rate, timeTicks,
 } from "@/lib/format"
 import { latencyP90 } from "@/lib/latency"
+import { getLatencyColor } from "@/lib/probeHistory"
 
 type Point = {
   ts: number
@@ -572,8 +573,8 @@ export function NodeDetail({ node }: { node: Node }) {
                       />
                     </svg>
                     {s.name}
-                    <span className="tabular-nums text-muted-foreground">
-                      P90 {p90 === undefined ? "—" : `${Math.round(p90)} ms`}
+                    <span className="tabular-nums" style={{ color: getLatencyColor(p90) }}>
+                      {p90 === undefined ? "—" : `${Math.round(p90)} ms`}
                     </span>
                     {/* The line is only what answered, so a probe dropping
                         half its packets draws like a healthy one. */}
