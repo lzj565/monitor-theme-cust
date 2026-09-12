@@ -1,6 +1,6 @@
 import {
-  getLatencyColor, getPacketLossColor, historySlots, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY,
-  targetsWithData, windowPacketLoss,
+  activeWindowPacketLoss, formatPacketLoss, getLatencyColor, getPacketLossColor, historySlots,
+  latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
 } from "./probeHistory.ts"
 
 let failed = 0
@@ -17,7 +17,22 @@ eq(
   "网络质量显示最近一小时的二十个三分钟桶",
 )
 
-eq([windowPacketLoss({ "1": 2.5 }, 1), windowPacketLoss({ "1": 2.5 }, 2)], [2.5, 0], "整窗丢包缺省为零")
+{
+  const now = 10_000
+  const oldSuccess = [{ task_id: 1, ts: now - 7_200, latency: 20 }]
+  const hour = [{ task_id: 1, ts: now - 120, latency: null, loss: 100 }]
+  eq(activeWindowPacketLoss(oldSuccess, hour, { "1": 25 }, 1, now), 25, "已激活使用后端整窗丢包")
+  eq(activeWindowPacketLoss([], hour, { "1": 100 }, 1, now), undefined, "从未成功不参与丢包计算")
+  eq(activeWindowPacketLoss([], [
+    { task_id: 1, ts: now - 180, latency: null, loss: 100 },
+    { task_id: 1, ts: now - 120, latency: 20 },
+    { task_id: 1, ts: now - 60, latency: null, loss: 100 },
+  ], { "1": 67 }, 1, now), 50, "首次成功之前的超时不参与近似值")
+  eq(activeWindowPacketLoss(oldSuccess, [{ task_id: 1, ts: now - 60, latency: 20 }], {}, 1, now), 0,
+    "已激活且整窗无丢包为零")
+  eq([formatPacketLoss(0), formatPacketLoss(2.54), formatPacketLoss(100)], ["0.0", "2.5", "100.0"],
+    "丢包百分比固定一位小数")
+}
 
 eq(
   [undefined, null, 50, 51, 100, 101, 200, 201, 300, 301, 500, 501].map(getLatencyColor),

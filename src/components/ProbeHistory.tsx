@@ -3,8 +3,8 @@ import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import {
-  getLatencyColor, getPacketLossColor, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
-  windowPacketLoss, type ProbeHistorySlot,
+  activeWindowPacketLoss, formatPacketLoss, getLatencyColor, getPacketLossColor, latestProbeSlot,
+  probeHistoryTargets, PROBE_HISTORY, targetsWithData, type ProbeHistorySlot,
 } from "@/lib/probeHistory"
 import { loadProbeHistory, nextProbeRefreshDelay, type ProbeHistoryResponse } from "@/lib/probeHistoryClient"
 import { cn } from "@/lib/utils"
@@ -33,7 +33,7 @@ function CurrentLoss({ loss }: { loss?: number }) {
   if (loss === undefined) return <span className="text-muted-foreground">—</span>
   return (
     <span className="tnum font-semibold" style={{ color: getPacketLossColor(loss) }}>
-      {loss}<span className="ml-0.5 font-normal text-muted-foreground">%</span>
+      {formatPacketLoss(loss)}<span className="ml-0.5 font-normal text-muted-foreground">%</span>
     </span>
   )
 }
@@ -202,7 +202,9 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
           {targets.map((target) => {
             const animateNewest = target.current.startAt === animatedBucket
             const latest = latestProbeSlot(target)
-            const loss = windowPacketLoss(response?.loss ?? {}, target.id)
+            const loss = activeWindowPacketLoss(
+              response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id, loadedAt / 1_000,
+            )
             return (
               <div key={target.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="mb-1.5 grid grid-cols-2 gap-3 text-xs sm:gap-5">
@@ -278,7 +280,9 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
         <div className="mt-4 space-y-2.5 border-t pt-3" aria-label="网络质量">
           {targets.map((target) => {
             const latest = latestProbeSlot(target)
-            const loss = windowPacketLoss(response?.loss ?? {}, target.id)
+            const loss = activeWindowPacketLoss(
+              response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id, loadedAt / 1_000,
+            )
             return (
               <div key={target.id} className="min-w-0">
                 <div className="mb-1 grid grid-cols-2 gap-2 text-[11px]">

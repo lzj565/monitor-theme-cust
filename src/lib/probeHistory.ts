@@ -38,9 +38,35 @@ export function latestProbeSlot(target: ProbeHistoryTarget) {
   return target.history.findLast((slot) => slot.hasData)
 }
 
-/** The hub omits probes with zero loss from its whole-window loss map. */
-export function windowPacketLoss(loss: Record<string, number>, targetId: number) {
-  return loss[targetId] ?? 0
+/**
+ * One-hour loss after the first success visible to this frontend. The hub's
+ * exact whole-window ratio is safe once activation predates the hour; during
+ * the first hour, equal one-minute buckets are the closest available estimate.
+ */
+export function activeWindowPacketLoss(
+  history: ProbePingPoint[],
+  hour: ProbePingPoint[],
+  loss: Record<string, number>,
+  targetId: number,
+  nowSeconds: number,
+) {
+  const hourStart = nowSeconds - 3_600
+  const hourly = hour.filter((point) => point.task_id === targetId).sort((a, b) => a.ts - b.ts)
+  if (hourly.length === 0) return undefined
+
+  const activatedBeforeWindow = history.some(
+    (point) => point.task_id === targetId && point.ts < hourStart && point.latency !== null,
+  )
+  if (activatedBeforeWindow) return loss[targetId] ?? 0
+
+  const firstSuccess = hourly.findIndex((point) => point.latency !== null)
+  if (firstSuccess < 0) return undefined
+  const active = hourly.slice(firstSuccess)
+  return active.reduce((total, point) => total + (point.loss ?? 0), 0) / active.length
+}
+
+export function formatPacketLoss(loss: number) {
+  return loss.toFixed(1)
 }
 
 export function getLatencyColor(ms: number | null | undefined): string {
