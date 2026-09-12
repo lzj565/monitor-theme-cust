@@ -1,9 +1,9 @@
 export const PROBE_HISTORY = {
-  bucketSeconds: 60,
-  blockCount: 60,
-  // The hub clamps points to at least 60. One hour / 60 points produces exact
-  // one-minute buckets, matching the default probe interval.
-  fetchHours: 1,
+  bucketSeconds: 3 * 60,
+  blockCount: 20,
+  // The hub clamps points to at least 60. Three hours / 60 points produces
+  // exact three-minute buckets; the UI keeps the most recent hour.
+  fetchHours: 3,
   fetchPoints: 60,
 } as const
 

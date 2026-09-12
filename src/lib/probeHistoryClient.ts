@@ -11,7 +11,7 @@ export type LoadedProbeHistory = {
   loadedAt: number
 }
 
-type CacheEntry = LoadedProbeHistory & { minute: number }
+type CacheEntry = LoadedProbeHistory & { bucket: number }
 
 const cache = new Map<number, CacheEntry>()
 const pending = new Map<number, Promise<LoadedProbeHistory>>()
@@ -38,11 +38,12 @@ function limited<T>(task: () => Promise<T>): Promise<T> {
   })
 }
 
-/** One shared request per node and minute, with headroom under the hub's four-query gate. */
+/** One shared request per node and history bucket, with headroom under the hub's four-query gate. */
 export function loadProbeHistory(nodeId: number): Promise<LoadedProbeHistory> {
-  const minute = Math.floor(Date.now() / 60_000)
+  const bucketMs = PROBE_HISTORY.bucketSeconds * 1_000
+  const bucket = Math.floor(Date.now() / bucketMs)
   const hit = cache.get(nodeId)
-  if (hit?.minute === minute) return Promise.resolve(hit)
+  if (hit?.bucket === bucket) return Promise.resolve(hit)
 
   const running = pending.get(nodeId)
   if (running) return running
@@ -51,7 +52,7 @@ export function loadProbeHistory(nodeId: number): Promise<LoadedProbeHistory> {
     const response = await api<ProbeHistoryResponse>(
       `/nodes/${nodeId}/metrics?hours=${PROBE_HISTORY.fetchHours}&points=${PROBE_HISTORY.fetchPoints}&series=ping`,
     )
-    const entry = { response, loadedAt: Date.now(), minute }
+    const entry = { response, loadedAt: Date.now(), bucket }
     cache.set(nodeId, entry)
     return entry
   }).finally(() => pending.delete(nodeId))
@@ -61,5 +62,6 @@ export function loadProbeHistory(nodeId: number): Promise<LoadedProbeHistory> {
 }
 
 export function nextProbeRefreshDelay(now = Date.now()) {
-  return 60_000 - now % 60_000 + 250
+  const bucketMs = PROBE_HISTORY.bucketSeconds * 1_000
+  return bucketMs - now % bucketMs + 250
 }

@@ -13,8 +13,8 @@ function eq(got: unknown, want: unknown, what: string) {
 
 eq(
   [PROBE_HISTORY.bucketSeconds, PROBE_HISTORY.blockCount, PROBE_HISTORY.fetchHours, PROBE_HISTORY.fetchPoints],
-  [60, 60, 1, 60],
-  "网络质量使用最近一小时的一分钟桶",
+  [180, 20, 3, 60],
+  "网络质量显示最近一小时的二十个三分钟桶",
 )
 
 eq(

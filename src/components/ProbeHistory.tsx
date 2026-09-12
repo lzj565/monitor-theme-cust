@@ -180,7 +180,7 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
             刷新失败，重试
           </button>
         ) : (
-          <span className="text-xs text-muted-foreground">最近 60 分钟 · 每 1 分钟</span>
+          <span className="text-xs text-muted-foreground">最近 60 分钟 · 每 3 分钟</span>
         )}
       </div>
 
@@ -198,21 +198,25 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
                   <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
                   <span className="shrink-0 text-muted-foreground">丢包 <CurrentLoss slot={latest} /></span>
                 </div>
-                <div className="grid gap-1.5 sm:grid-cols-[2rem_1fr] sm:items-center">
-                  <span className="hidden text-[10px] text-muted-foreground sm:block">延迟</span>
-                  <HistoryBlocks
-                    history={target.history}
-                    kind="latency"
-                    animateNewest={animateNewest}
-                    onTooltip={setTooltip}
-                  />
-                  <span className="hidden text-[10px] text-muted-foreground sm:block">丢包</span>
-                  <HistoryBlocks
-                    history={target.history}
-                    kind="loss"
-                    animateNewest={animateNewest}
-                    onTooltip={setTooltip}
-                  />
+                <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                  <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">延迟</span>
+                    <HistoryBlocks
+                      history={target.history}
+                      kind="latency"
+                      animateNewest={animateNewest}
+                      onTooltip={setTooltip}
+                    />
+                  </div>
+                  <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">丢包</span>
+                    <HistoryBlocks
+                      history={target.history}
+                      kind="loss"
+                      animateNewest={animateNewest}
+                      onTooltip={setTooltip}
+                    />
+                  </div>
                 </div>
               </div>
             )
@@ -265,9 +269,15 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                   <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
                   <span className="shrink-0 text-muted-foreground">丢 <CurrentLoss slot={latest} /></span>
                 </div>
-                <div className="space-y-1">
-                  <HistoryBlocks history={target.history} kind="latency" animateNewest={false} onTooltip={setTooltip} />
-                  <HistoryBlocks history={target.history} kind="loss" animateNewest={false} onTooltip={setTooltip} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">延迟</span>
+                    <HistoryBlocks history={target.history} kind="latency" animateNewest={false} onTooltip={setTooltip} />
+                  </div>
+                  <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">丢包</span>
+                    <HistoryBlocks history={target.history} kind="loss" animateNewest={false} onTooltip={setTooltip} />
+                  </div>
                 </div>
               </div>
             )
