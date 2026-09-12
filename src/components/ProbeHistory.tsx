@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -54,7 +55,7 @@ function HistoryBlocks({
     return `${rangeLabel(slot)} · 丢包 ${slot.packetLoss ?? 0}%`
   }
   const move = (event: React.PointerEvent, text: string) => {
-    const alignRight = event.clientX > globalThis.innerWidth / 2
+    const alignRight = event.clientX > globalThis.innerWidth - 220
     onTooltip({
       x: event.clientX + (alignRight ? -12 : 12),
       y: Math.max(44, event.clientY - 8),
@@ -144,7 +145,7 @@ function useProbeData(nodeId: number, enabled = true) {
 
 function ProbeTooltip({ tooltip }: { tooltip: TooltipState }) {
   if (!tooltip) return null
-  return (
+  return createPortal(
     <div
       role="tooltip"
       className={cn(
@@ -154,7 +155,8 @@ function ProbeTooltip({ tooltip }: { tooltip: TooltipState }) {
       style={{ left: tooltip.x, top: tooltip.y }}
     >
       {tooltip.text}
-    </div>
+    </div>,
+    document.body,
   )
 }
 
