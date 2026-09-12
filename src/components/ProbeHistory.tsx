@@ -204,10 +204,14 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
             const latest = latestProbeSlot(target)
             return (
               <div key={target.id} className="py-2.5 first:pt-0 last:pb-0">
-                <div className="mb-1.5 flex min-w-0 items-center gap-3 text-xs">
-                  <span className="truncate font-medium text-sm">{target.name}</span>
-                  <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
-                  <span className="shrink-0 text-muted-foreground">丢包 <CurrentLoss slot={latest} /></span>
+                <div className="mb-1.5 grid grid-cols-2 gap-3 text-xs sm:gap-5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="truncate font-medium text-sm">{target.name}</span>
+                    <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <CurrentLoss slot={latest} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:gap-5">
                   <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1.5">
@@ -279,6 +283,9 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="truncate font-medium">{target.name}</span>
                     <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <CurrentLoss slot={latest} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
