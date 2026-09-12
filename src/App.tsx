@@ -6,6 +6,8 @@ import { Summary } from "@/components/Summary"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, useNodes, type Node } from "@/lib/api"
+import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
+import { VisitorCard } from "@/components/VisitorCard"
 
 type Me = { authed: boolean; github: boolean; site_name: string; public_page: boolean }
 
@@ -57,6 +59,8 @@ export default function App() {
   const [meError, setMeError] = useState("")
   const { nodes, error, closed } = useNodes()
   const [open, go] = useNodeRoute()
+  const [visitor, setVisitor] = useState<VisitorInfo | null>(null)
+  const closeVisitor = useCallback(() => setVisitor(null), [])
 
   const loadMe = useCallback(() => {
     // `|| "..."` because an empty message reads as no error: api() falls back to
@@ -76,6 +80,12 @@ export default function App() {
     // node opened: 2.6s click-to-chart on 4G against 1.4s unsplit, 1.7s warm.
     void loadDetail()
   }, [loadMe])
+
+  useEffect(() => {
+    if (open !== null) return
+    const timer = setTimeout(() => void loadVisitor().then(setVisitor), 2000)
+    return () => clearTimeout(timer)
+  }, [open])
 
   // The status page was closed while this tab was open. `me` holds whatever it
   // reported at load, so it is re-queried; the effect below then directs an
@@ -169,6 +179,7 @@ export default function App() {
           </>
         )}
       </main>
+      {open === null && visitor && <VisitorCard info={visitor} onClose={closeVisitor} />}
     </div>
   )
 }

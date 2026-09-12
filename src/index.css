@@ -191,8 +191,15 @@
 
 .probe-new-block { animation: probe-block-in 200ms ease-out; }
 
+@keyframes visitor-card-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.visitor-card-in { animation: visitor-card-in 500ms ease-out; }
+
 @media (prefers-reduced-motion: reduce) {
-  .probe-new-block { animation: none; }
+  .probe-new-block, .visitor-card-in { animation: none; }
 }
 
 /* Tabular figures keep live numbers from shifting as they update. */

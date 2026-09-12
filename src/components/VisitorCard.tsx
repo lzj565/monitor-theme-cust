@@ -1,0 +1,88 @@
+import { useEffect, useRef } from "react"
+import { Building2, Globe2, MapPin, Wifi, X } from "lucide-react"
+
+import { Card } from "@/components/ui/card"
+import type { VisitorInfo } from "@/lib/visitor"
+import { cn } from "@/lib/utils"
+
+function location(info: VisitorInfo) {
+  return [info.country, info.region, info.city].filter(Boolean).join(" · ")
+}
+
+function Detail({ icon: Icon, label, value }: { icon: typeof Globe2; label: string; value: string }) {
+  if (!value) return null
+  return (
+    <div className="flex min-w-0 items-center gap-2 text-xs">
+      <Icon className="size-3.5 shrink-0 text-metric-cyan" />
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className="truncate" title={value}>{value}</span>
+    </div>
+  )
+}
+
+export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () => void }) {
+  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const remaining = useRef(10000)
+  const started = useRef(0)
+
+  useEffect(() => {
+    const start = () => {
+      started.current = Date.now()
+      timeout.current = setTimeout(onClose, remaining.current)
+    }
+    start()
+    return () => { if (timeout.current) clearTimeout(timeout.current) }
+  }, [onClose])
+
+  const pause = () => {
+    if (!timeout.current) return
+    clearTimeout(timeout.current)
+    timeout.current = null
+    remaining.current = Math.max(0, remaining.current - (Date.now() - started.current))
+  }
+
+  const resume = () => {
+    if (timeout.current || remaining.current <= 0) return
+    started.current = Date.now()
+    timeout.current = setTimeout(onClose, remaining.current)
+  }
+
+  return (
+    <aside
+      aria-label="访客信息"
+      onPointerEnter={pause}
+      onPointerLeave={resume}
+      className={cn(
+        "fixed inset-x-3 bottom-3 z-30 w-auto sm:left-4 sm:right-auto sm:w-80",
+        "visitor-card-in",
+      )}
+    >
+      <Card className="relative gap-3 p-4 shadow-2xl shadow-metric-blue/10">
+        <button
+          type="button"
+          aria-label="关闭访客信息"
+          title="关闭"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <X className="size-4" />
+        </button>
+        <div className="flex items-center gap-2 pr-6">
+          <span className="grid size-8 place-items-center rounded-full bg-metric-cyan/12 text-metric-cyan">
+            <Wifi className="size-4" />
+          </span>
+          <div>
+            <p className="text-sm font-medium">欢迎访问</p>
+            <p className="text-[11px] text-muted-foreground">检测到您的网络位置</p>
+          </div>
+        </div>
+        <div className="space-y-2 border-t pt-3">
+          <Detail icon={Globe2} label="IP" value={info.ip} />
+          <Detail icon={MapPin} label="位置" value={location(info)} />
+          <Detail icon={Building2} label="运营商" value={info.organization} />
+        </div>
+        <p className="text-[10px] text-muted-foreground">位置根据 IP 估算，仅供参考</p>
+      </Card>
+    </aside>
+  )
+}

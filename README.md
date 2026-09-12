@@ -6,6 +6,8 @@ React + Vite + shadcn/ui，黑白配色。
 
 ## 开发
 
+完整的 hub 获取、编译、启动和常见问题说明见 [DEVELOPMENT.md](DEVELOPMENT.md)。
+
 启动一个 hub 实例：
 
 ```bash
