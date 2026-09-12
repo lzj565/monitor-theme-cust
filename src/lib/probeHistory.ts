@@ -1,10 +1,9 @@
 export const PROBE_HISTORY = {
-  bucketSeconds: 3 * 60,
-  blockCount: 30,
-  // The hub clamps points to at least 60. Three hours / 60 points produces
-  // exact three-minute buckets; the UI then keeps the most recent 30 completed
-  // buckets for a 90-minute strip.
-  fetchHours: 3,
+  bucketSeconds: 60,
+  blockCount: 60,
+  // The hub clamps points to at least 60. One hour / 60 points produces exact
+  // one-minute buckets, matching the default probe interval.
+  fetchHours: 1,
   fetchPoints: 60,
 } as const
 
@@ -29,6 +28,14 @@ export type ProbeHistoryTarget = {
   name: string
   history: ProbeHistorySlot[]
   current: ProbeHistorySlot
+}
+
+export function targetsWithData(targets: ProbeHistoryTarget[], limit = Infinity) {
+  return targets.filter((target) => target.history.some((slot) => slot.hasData)).slice(0, limit)
+}
+
+export function latestProbeSlot(target: ProbeHistoryTarget) {
+  return target.history.findLast((slot) => slot.hasData)
 }
 
 export function getLatencyColor(ms: number | null | undefined): string {

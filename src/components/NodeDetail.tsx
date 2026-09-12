@@ -93,6 +93,7 @@ const PALETTE = [
 const TABS = [
   { key: "resources", label: "资源" },
   { key: "latency", label: "网络延迟" },
+  { key: "quality", label: "网络质量" },
 ] as const
 
 function Panel({ title, value, icon: Icon, tone, border, children }: {
@@ -180,7 +181,7 @@ export function NodeDetail({ node }: { node: Node }) {
   // Each tab keeps its own range: a 7-day trend and a 1-hour trace answer
   // different questions.
   const [ranges, setRanges] = useState({ resources: 6, latency: 6 })
-  const hours = ranges[tab]
+  const hours = tab === "quality" ? 1 : ranges[tab]
   const [smooth, setSmooth] = useState(false)
   // Probes switched off. Hiding a slow one is what makes the fast ones readable,
   // as the axis rescales to what remains.
@@ -208,6 +209,7 @@ export function NodeDetail({ node }: { node: Node }) {
     setZoom(null)
     // oxlint-disable-next-line react/set-state-in-effect
     setFailed("")
+    if (tab === "quality") return () => { active = false }
     // What this screen can resolve, in device pixels, which is the unit the line
     // is drawn in: a 1280-wide retina panel has 2560 of them for a day of minutes.
     // Read here rather than from a ref, since the hub only thins further, an
@@ -390,7 +392,7 @@ export function NodeDetail({ node }: { node: Node }) {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="segmented-control">
+          {tab !== "quality" && <div className="segmented-control">
             {RANGES_FOR[tab].map((r) => (
               <Tab
                 key={r.hours}
@@ -400,7 +402,7 @@ export function NodeDetail({ node }: { node: Node }) {
                 {r.label}
               </Tab>
             ))}
-          </div>
+          </div>}
           {tab === "latency" && (
             <label className="flex cursor-pointer items-center gap-2 px-2 text-xs text-muted-foreground">
               <input
@@ -416,13 +418,14 @@ export function NodeDetail({ node }: { node: Node }) {
         </div>
       </div>
 
-      {!data ? (
+      {tab === "quality" ? (
+        <ProbeHistory nodeId={node.id} />
+      ) : !data ? (
         <Skeleton className="h-40 w-full" />
       ) : failed ? (
         <p className="py-8 text-center text-sm text-destructive" role="alert">读取历史数据失败：{failed}</p>
       ) : tab === "latency" ? (
         <div className="space-y-4">
-          <ProbeHistory nodeId={node.id} />
           {pingSeries.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">这段时间没有延迟数据</p>
           ) : (

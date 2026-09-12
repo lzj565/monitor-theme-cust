@@ -3,6 +3,7 @@ import { Activity, ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, Inbox, MemoryStick
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Meter } from "@/components/Meter"
+import { NodeProbeSummary } from "@/components/ProbeHistory"
 import type { Node } from "@/lib/api"
 import { bytes, daysUntil, FOREVER, osName, pair, percent, rate, severity, uptime, type Severity } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -232,6 +233,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
           还没有接入。在后台生成安装命令并执行一次。
         </p>
       )}
+      <NodeProbeSummary nodeId={node.id} />
     </Card>
   )
 }
