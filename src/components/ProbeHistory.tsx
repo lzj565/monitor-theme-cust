@@ -8,7 +8,7 @@ import {
 import { loadProbeHistory, nextProbeRefreshDelay, type ProbeHistoryResponse } from "@/lib/probeHistoryClient"
 import { cn } from "@/lib/utils"
 
-type TooltipState = { x: number; y: number; text: string } | null
+type TooltipState = { x: number; y: number; text: string; alignRight: boolean } | null
 
 const TIME = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" })
 
@@ -45,16 +45,22 @@ function HistoryBlocks({
   animateNewest: boolean
   onTooltip: (next: TooltipState) => void
 }) {
+  const label = kind === "latency" ? "延迟" : "丢包"
   const describe = (slot: ProbeHistorySlot) => {
-    if (!slot.hasData) return `${rangeLabel(slot)} · 无数据`
+    if (!slot.hasData) return `${rangeLabel(slot)} · ${label}无数据`
     if (kind === "latency") {
-      return `${rangeLabel(slot)} · ${slot.latency === null ? "超时" : `${slot.latency} ms`}`
+      return `${rangeLabel(slot)} · ${slot.latency === null ? "延迟超时" : `延迟 ${slot.latency} ms`}`
     }
-    return `${rangeLabel(slot)} · ${slot.packetLoss ?? 0}%`
+    return `${rangeLabel(slot)} · 丢包 ${slot.packetLoss ?? 0}%`
   }
   const move = (event: React.PointerEvent, text: string) => {
-    const x = Math.max(105, Math.min(globalThis.innerWidth - 105, event.clientX))
-    onTooltip({ x, y: event.clientY - 9, text })
+    const alignRight = event.clientX > globalThis.innerWidth / 2
+    onTooltip({
+      x: event.clientX + (alignRight ? -12 : 12),
+      y: Math.max(44, event.clientY - 8),
+      text,
+      alignRight,
+    })
   }
 
   return (
@@ -141,7 +147,10 @@ function ProbeTooltip({ tooltip }: { tooltip: TooltipState }) {
   return (
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-[#d8dde6] px-3 py-[7px] text-[13px] font-semibold whitespace-nowrap text-[#20242b]"
+      className={cn(
+        "pointer-events-none fixed z-50 -translate-y-full rounded-lg bg-[#d8dde6] px-3 py-[7px] text-[13px] font-semibold whitespace-nowrap text-[#20242b]",
+        tooltip.alignRight && "-translate-x-full",
+      )}
       style={{ left: tooltip.x, top: tooltip.y }}
     >
       {tooltip.text}
@@ -270,12 +279,10 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                   <span className="shrink-0 text-muted-foreground">丢 <CurrentLoss slot={latest} /></span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">延迟</span>
+                  <div className="min-w-0">
                     <HistoryBlocks history={target.history} kind="latency" animateNewest={false} onTooltip={setTooltip} />
                   </div>
-                  <div className="grid min-w-0 grid-cols-[2rem_1fr] items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">丢包</span>
+                  <div className="min-w-0">
                     <HistoryBlocks history={target.history} kind="loss" animateNewest={false} onTooltip={setTooltip} />
                   </div>
                 </div>
