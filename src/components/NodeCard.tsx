@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Meter } from "@/components/Meter"
 import type { Node } from "@/lib/api"
-import { bytes, daysUntil, FOREVER, osName, pair, percent, rate, uptime } from "@/lib/format"
+import { bytes, daysUntil, FOREVER, osName, pair, percent, rate, severity, uptime, type Severity } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 /** Which direction the plan meters, matching the node's traffic_mode. */
@@ -85,17 +85,24 @@ function Expiry({ node }: { node: Node }) {
   )
 }
 
-function RuntimeStat({ icon: Icon, label, value, tone }: {
+const severityTone: Record<Severity, string> = {
+  green: "text-metric-green",
+  yellow: "text-metric-yellow",
+  red: "text-destructive",
+}
+
+function RuntimeStat({ icon: Icon, label, value, tone, valueTone }: {
   icon: typeof Activity
   label: string
   value: React.ReactNode
   tone: string
+  valueTone?: string
 }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5 text-xs">
       <Icon className={`size-3.5 shrink-0 ${tone}`} />
       <span className="text-muted-foreground">{label}</span>
-      <span className="tnum truncate font-medium">{value}</span>
+      <span className={cn("tnum truncate font-medium", valueTone)}>{value}</span>
     </div>
   )
 }
@@ -179,7 +186,13 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               tone="yellow"
             />
             <div className="flex min-w-0 flex-col justify-between gap-2">
-              <RuntimeStat icon={Activity} label="进程" value={m?.procs ?? "—"} tone="text-metric-yellow" />
+              <RuntimeStat
+                icon={Activity}
+                label="进程数"
+                value={m?.procs ?? "—"}
+                tone="text-metric-yellow"
+                valueTone={m ? severityTone[severity(m.procs, 100, 200)] : "text-muted-foreground"}
+              />
               <RuntimeStat icon={Network} label="TCP" value={m?.tcp ?? "—"} tone="text-metric-purple" />
               <RuntimeStat icon={Network} label="UDP" value={m?.udp ?? "—"} tone="text-metric-blue" />
             </div>
@@ -189,12 +202,16 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowDown className="size-3 text-metric-green" />
               <span className="text-muted-foreground">下行</span>
-              <span className="truncate">{m ? rate(m.net_rx) : "—"}</span>
+              <span className={cn("truncate", m ? severityTone[severity(m.net_rx, 1024 ** 2, 10 * 1024 ** 2)] : "text-muted-foreground")}>
+                {m ? rate(m.net_rx) : "—"}
+              </span>
             </span>
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowUp className="size-3 text-metric-blue" />
               <span className="text-muted-foreground">上行</span>
-              <span className="truncate">{m ? rate(m.net_tx) : "—"}</span>
+              <span className={cn("truncate", m ? severityTone[severity(m.net_tx, 1024 ** 2, 10 * 1024 ** 2)] : "text-muted-foreground")}>
+                {m ? rate(m.net_tx) : "—"}
+              </span>
             </span>
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <Inbox className="size-3 text-metric-green" />

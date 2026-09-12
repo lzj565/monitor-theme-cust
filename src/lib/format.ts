@@ -55,6 +55,15 @@ export function percent(used: number, total: number): number {
   return total > 0 ? Math.min(100, (used / total) * 100) : 0
 }
 
+export type Severity = "green" | "yellow" | "red"
+
+/** Three fixed bands for live figures that have no meaningful capacity. */
+export function severity(value: number, warnAt: number, dangerAt: number): Severity {
+  if (value >= dangerAt) return "red"
+  if (value >= warnAt) return "yellow"
+  return "green"
+}
+
 export function uptime(seconds: number): string {
   if (!seconds) return "—"
   const d = Math.floor(seconds / 86400)

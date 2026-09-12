@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Country, Status } from "@/components/NodeCard"
+import { ProbeHistory } from "@/components/ProbeHistory"
 import { api, type Node } from "@/lib/api"
 import {
   axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, rate, timeTicks,
@@ -420,9 +421,11 @@ export function NodeDetail({ node }: { node: Node }) {
       ) : failed ? (
         <p className="py-8 text-center text-sm text-destructive" role="alert">读取历史数据失败：{failed}</p>
       ) : tab === "latency" ? (
-        pingSeries.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">这段时间没有延迟数据</p>
-        ) : (
+        <div className="space-y-4">
+          <ProbeHistory nodeId={node.id} />
+          {pingSeries.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">这段时间没有延迟数据</p>
+          ) : (
           // An explicit pixel height on the column, so the chart can be `flex-1`
           // within it while the legend takes what it needs: four probes are one row
           // of chips on a desktop and two on a phone, so any fixed reservation is
@@ -565,8 +568,9 @@ export function NodeDetail({ node }: { node: Node }) {
               })}
             </div>
             )}
-          </div>
-        )
+            </div>
+          )}
+        </div>
       ) : data.metrics.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">这段时间没有历史数据</p>
       ) : (

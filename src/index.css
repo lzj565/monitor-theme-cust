@@ -51,6 +51,19 @@
   --metric-yellow: #cc9420;
   --metric-pink: #dc4d92;
   --metric-cyan: #159aac;
+  --probe-green: #35c96f;
+  --probe-lime: #8ecf45;
+  --probe-yellow: #d7d93f;
+  --probe-amber: #f2b63d;
+  --probe-orange: #f28c28;
+  --probe-red: #ef5350;
+  --probe-timeout: #d83a2e;
+  --probe-loss-lime: #78c943;
+  --probe-loss-yellow: #d6d83e;
+  --probe-loss-orange: #ef5b3f;
+  --probe-loss-red: #dc3028;
+  --probe-loss-total: #d92720;
+  --probe-empty: rgb(27 36 48 / 10%);
 }
 
 .dark {
@@ -91,6 +104,19 @@
   --metric-yellow: #e8b33d;
   --metric-pink: #ef5da8;
   --metric-cyan: #28c4d8;
+  --probe-green: #35c96f;
+  --probe-lime: #8ecf45;
+  --probe-yellow: #d7d93f;
+  --probe-amber: #f2b63d;
+  --probe-orange: #f28c28;
+  --probe-red: #ef5350;
+  --probe-timeout: #d83a2e;
+  --probe-loss-lime: #78c943;
+  --probe-loss-yellow: #d6d83e;
+  --probe-loss-orange: #ef5b3f;
+  --probe-loss-red: #dc3028;
+  --probe-loss-total: #d92720;
+  --probe-empty: rgb(255 255 255 / 10%);
 }
 
 @theme inline {
@@ -157,6 +183,16 @@
       radial-gradient(circle at 92% 12%, rgb(168 85 247 / 16%), transparent 36rem),
       radial-gradient(circle at 48% 105%, rgb(40 196 216 / 10%), transparent 42rem);
   }
+}
+
+@keyframes probe-block-in {
+  from { opacity: 0; transform: translateX(3px); }
+}
+
+.probe-new-block { animation: probe-block-in 200ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .probe-new-block { animation: none; }
 }
 
 /* Tabular figures keep live numbers from shifting as they update. */

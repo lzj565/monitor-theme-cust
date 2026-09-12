@@ -2,8 +2,14 @@ import { Activity, ArrowDown, ArrowDownUp, ArrowUp, Gauge, Inbox, Send, Server }
 
 import { Card } from "@/components/ui/card"
 import { speedHistory, type Node } from "@/lib/api"
-import { bytes, rate } from "@/lib/format"
+import { bytes, rate, severity, type Severity } from "@/lib/format"
 import { cn } from "@/lib/utils"
+
+const severityTone: Record<Severity, string> = {
+  green: "text-metric-green",
+  yellow: "text-metric-yellow",
+  red: "text-destructive",
+}
 
 function Tile({ icon: Icon, label, children, tone }: {
   icon: typeof Server; label: string; children: React.ReactNode; tone: string
@@ -24,11 +30,13 @@ function Tile({ icon: Icon, label, children, tone }: {
  * Stacked below sm, where two tiles share a phone's width and "23.3 MB" has
  * roughly 70px available.
  */
-function Flow({ down, up, className, kind = "rate" }: {
+function Flow({ down, up, className, kind = "rate", downTone, upTone }: {
   down: string
   up: string
   className?: string
   kind?: "rate" | "traffic"
+  downTone?: string
+  upTone?: string
 }) {
   const DownIcon = kind === "rate" ? ArrowDown : Inbox
   const UpIcon = kind === "rate" ? ArrowUp : Send
@@ -37,12 +45,12 @@ function Flow({ down, up, className, kind = "rate" }: {
       <span className="inline-flex items-center gap-1">
         <DownIcon className="size-3 shrink-0 text-metric-green" />
         <span className="text-muted-foreground">{kind === "rate" ? "下行" : "入站"}</span>
-        {down}
+        <span className={downTone}>{down}</span>
       </span>
       <span className="inline-flex items-center gap-1">
         <UpIcon className="size-3 shrink-0 text-metric-blue" />
         <span className="text-muted-foreground">{kind === "rate" ? "上行" : "出站"}</span>
-        {up}
+        <span className={upTone}>{up}</span>
       </span>
     </div>
   )
@@ -118,7 +126,13 @@ export function Summary({ nodes }: { nodes: Node[] }) {
       </Tile>
 
       <Tile icon={Gauge} label="实时网速" tone="text-metric-blue">
-        <Flow down={rate(now.rx)} up={rate(now.tx)} className="mt-1 text-sm font-semibold" />
+        <Flow
+          down={rate(now.rx)}
+          up={rate(now.tx)}
+          downTone={severityTone[severity(now.rx, 1024 ** 2, 10 * 1024 ** 2)]}
+          upTone={severityTone[severity(now.tx, 1024 ** 2, 10 * 1024 ** 2)]}
+          className="mt-1 text-sm font-semibold"
+        />
         <div className="mt-auto pt-1">
           <Spark
             series={[
