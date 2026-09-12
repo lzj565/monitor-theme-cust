@@ -14,6 +14,7 @@ import { api, type Node } from "@/lib/api"
 import {
   axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, rate, timeTicks,
 } from "@/lib/format"
+import { latencyP90 } from "@/lib/latency"
 
 type Point = {
   ts: number
@@ -320,6 +321,18 @@ export function NodeDetail({ node }: { node: Node }) {
     return [...rows.values()].sort((a, b) => a.ts - b.ts)
   }, [pingSeries])
 
+  const probeP90 = useMemo(() => {
+    if (pingRows.length === 0) return new Map<number, number>()
+    const from = pingRows[Math.min(zoom?.[0] ?? 0, pingRows.length - 1)].ts / 1_000
+    const to = pingRows[Math.min(zoom?.[1] ?? pingRows.length - 1, pingRows.length - 1)].ts / 1_000
+    return new Map(
+      pingSeries.flatMap((series) => {
+        const value = latencyP90(series.points, from, to)
+        return value === undefined ? [] : [[series.id, value] as const]
+      }),
+    )
+  }, [pingRows, pingSeries, zoom])
+
   // A real time axis rather than the category axis recharts defaults to: on a
   // category axis ticks are selected by index, so a period the agent was offline
   // for collapses to nothing.
@@ -532,10 +545,10 @@ export function NodeDetail({ node }: { node: Node }) {
                 drawn in it is picked here. Recharts paints the brush into the
                 same SVG as the axis, so this is as close beneath as HTML
                 sits. */}
-            {(pingSeries.length > 1 || pingSeries.some((s) => s.loss > 0)) && (
             <div className="flex flex-wrap items-center justify-center gap-1.5">
               {pingSeries.map((s) => {
                 const shown = !hiddenProbes.includes(s.id)
+                const p90 = probeP90.get(s.id)
                 return (
                   <button
                     key={s.id}
@@ -559,6 +572,9 @@ export function NodeDetail({ node }: { node: Node }) {
                       />
                     </svg>
                     {s.name}
+                    <span className="tabular-nums text-muted-foreground">
+                      P90 {p90 === undefined ? "—" : `${Math.round(p90)} ms`}
+                    </span>
                     {/* The line is only what answered, so a probe dropping
                         half its packets draws like a healthy one. */}
                     {s.loss > 0 && (
@@ -570,7 +586,6 @@ export function NodeDetail({ node }: { node: Node }) {
                 )
               })}
             </div>
-            )}
             </div>
           )}
         </div>
