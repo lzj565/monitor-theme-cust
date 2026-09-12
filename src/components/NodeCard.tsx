@@ -194,8 +194,20 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
                 tone="text-metric-yellow"
                 valueTone={m ? severityTone[severity(m.procs, 100, 200)] : "text-muted-foreground"}
               />
-              <RuntimeStat icon={Network} label="TCP" value={m?.tcp ?? "—"} tone="text-metric-purple" />
-              <RuntimeStat icon={Network} label="UDP" value={m?.udp ?? "—"} tone="text-metric-blue" />
+            <RuntimeStat
+              icon={Network}
+              label="TCP"
+              value={m?.tcp ?? "—"}
+              tone="text-metric-purple"
+              valueTone={m ? severityTone[severity(m.tcp, 100, 200)] : "text-muted-foreground"}
+            />
+            <RuntimeStat
+              icon={Network}
+              label="UDP"
+              value={m?.udp ?? "—"}
+              tone="text-metric-blue"
+              valueTone={m ? severityTone[severity(m.udp, 100, 200)] : "text-muted-foreground"}
+            />
             </div>
           </div>
 
