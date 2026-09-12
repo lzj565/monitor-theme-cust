@@ -1,8 +1,8 @@
 {
   "name": "暗色玻璃",
-  "short": "default",
+  "short": "glass-visitor",
   "description": "暗色玻璃风格服务器状态面板",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "author": "lzj565",
   "url": "https://github.com/lzj565/monitor-theme-cust"
 }
