@@ -1,8 +1,8 @@
 {
-  "name": "默认主题",
+  "name": "暗色玻璃",
   "short": "default",
-  "description": "内置状态面板，黑白配色",
-  "version": "1.0.0",
-  "author": "stqfdyr",
-  "url": "https://github.com/monitor-probe/monitor-theme-default"
+  "description": "暗色玻璃风格服务器状态面板",
+  "version": "1.0.1",
+  "author": "lzj565",
+  "url": "https://github.com/lzj565/monitor-theme-cust"
 }
