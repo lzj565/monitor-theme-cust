@@ -275,10 +275,11 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
             const latest = latestProbeSlot(target)
             return (
               <div key={target.id} className="min-w-0">
-                <div className="mb-1 flex items-center gap-2 text-[11px]">
-                  <span className="truncate font-medium">{target.name}</span>
-                  <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
-                  <span className="shrink-0 text-muted-foreground">丢 <CurrentLoss slot={latest} /></span>
+                <div className="mb-1 grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-medium">{target.name}</span>
+                    <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="min-w-0">
