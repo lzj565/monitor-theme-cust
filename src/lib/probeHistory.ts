@@ -38,6 +38,11 @@ export function latestProbeSlot(target: ProbeHistoryTarget) {
   return target.history.findLast((slot) => slot.hasData)
 }
 
+/** The hub omits probes with zero loss from its whole-window loss map. */
+export function windowPacketLoss(loss: Record<string, number>, targetId: number) {
+  return loss[targetId] ?? 0
+}
+
 export function getLatencyColor(ms: number | null | undefined): string {
   if (ms === undefined) return "var(--probe-empty)"
   if (ms === null) return "var(--probe-timeout)"

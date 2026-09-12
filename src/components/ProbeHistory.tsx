@@ -4,7 +4,7 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import {
   getLatencyColor, getPacketLossColor, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
-  type ProbeHistorySlot,
+  windowPacketLoss, type ProbeHistorySlot,
 } from "@/lib/probeHistory"
 import { loadProbeHistory, nextProbeRefreshDelay, type ProbeHistoryResponse } from "@/lib/probeHistoryClient"
 import { cn } from "@/lib/utils"
@@ -29,11 +29,11 @@ function CurrentLatency({ slot }: { slot?: ProbeHistorySlot }) {
   )
 }
 
-function CurrentLoss({ slot }: { slot?: ProbeHistorySlot }) {
-  if (!slot?.hasData || slot.packetLoss === undefined) return <span className="text-muted-foreground">—</span>
+function CurrentLoss({ loss }: { loss?: number }) {
+  if (loss === undefined) return <span className="text-muted-foreground">—</span>
   return (
-    <span className="tnum font-semibold" style={{ color: getPacketLossColor(slot.packetLoss) }}>
-      {slot.packetLoss}<span className="ml-0.5 font-normal text-muted-foreground">%</span>
+    <span className="tnum font-semibold" style={{ color: getPacketLossColor(loss) }}>
+      {loss}<span className="ml-0.5 font-normal text-muted-foreground">%</span>
     </span>
   )
 }
@@ -202,6 +202,7 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
           {targets.map((target) => {
             const animateNewest = target.current.startAt === animatedBucket
             const latest = latestProbeSlot(target)
+            const loss = windowPacketLoss(response?.loss ?? {}, target.id)
             return (
               <div key={target.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="mb-1.5 grid grid-cols-2 gap-3 text-xs sm:gap-5">
@@ -210,7 +211,7 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
                     <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
                   </div>
                   <div className="flex items-center justify-end">
-                    <CurrentLoss slot={latest} />
+                    <CurrentLoss loss={loss} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:gap-5">
@@ -277,6 +278,7 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
         <div className="mt-4 space-y-2.5 border-t pt-3" aria-label="网络质量">
           {targets.map((target) => {
             const latest = latestProbeSlot(target)
+            const loss = windowPacketLoss(response?.loss ?? {}, target.id)
             return (
               <div key={target.id} className="min-w-0">
                 <div className="mb-1 grid grid-cols-2 gap-2 text-[11px]">
@@ -285,7 +287,7 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                     <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
                   </div>
                   <div className="flex items-center justify-end">
-                    <CurrentLoss slot={latest} />
+                    <CurrentLoss loss={loss} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

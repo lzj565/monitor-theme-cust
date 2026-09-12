@@ -1,6 +1,6 @@
 import {
   getLatencyColor, getPacketLossColor, historySlots, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY,
-  targetsWithData,
+  targetsWithData, windowPacketLoss,
 } from "./probeHistory.ts"
 
 let failed = 0
@@ -16,6 +16,8 @@ eq(
   [180, 20, 3, 60],
   "网络质量显示最近一小时的二十个三分钟桶",
 )
+
+eq([windowPacketLoss({ "1": 2.5 }, 1), windowPacketLoss({ "1": 2.5 }, 2)], [2.5, 0], "整窗丢包缺省为零")
 
 eq(
   [undefined, null, 50, 51, 100, 101, 200, 201, 300, 301, 500, 501].map(getLatencyColor),

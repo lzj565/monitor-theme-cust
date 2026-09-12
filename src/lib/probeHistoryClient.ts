@@ -4,6 +4,7 @@ import { PROBE_HISTORY, type ProbePingPoint } from "@/lib/probeHistory"
 export type ProbeHistoryResponse = {
   ping: ProbePingPoint[]
   probes: Record<string, string>
+  loss: Record<string, number>
 }
 
 export type LoadedProbeHistory = {
@@ -49,9 +50,17 @@ export function loadProbeHistory(nodeId: number): Promise<LoadedProbeHistory> {
   if (running) return running
 
   const request = limited(async () => {
-    const response = await api<ProbeHistoryResponse>(
+    const history = await api<Omit<ProbeHistoryResponse, "loss">>(
       `/nodes/${nodeId}/metrics?hours=${PROBE_HISTORY.fetchHours}&points=${PROBE_HISTORY.fetchPoints}&series=ping`,
     )
+    // The three-hour request above gives the hub enough room to create native
+    // three-minute buckets. Loss shown beside the strip is a different measure:
+    // the exact ratio across the most recent hour, calculated by the hub from
+    // sample counts that are no longer available in each returned bucket.
+    const oneHour = await api<Pick<ProbeHistoryResponse, "loss">>(
+      `/nodes/${nodeId}/metrics?hours=1&points=${PROBE_HISTORY.fetchPoints}&series=ping`,
+    )
+    const response = { ...history, loss: oneHour.loss ?? {} }
     const entry = { response, loadedAt: Date.now(), bucket }
     cache.set(nodeId, entry)
     return entry
