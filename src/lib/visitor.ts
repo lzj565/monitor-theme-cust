@@ -12,6 +12,18 @@ export type VisitorInfo = {
 
 export type VisitorEnvironment = Pick<VisitorInfo, "device" | "browser" | "os">
 
+type UserAgentBrand = { brand: string; version: string }
+
+export type UserAgentDataLike = {
+  mobile?: boolean
+  platform?: string
+  brands?: UserAgentBrand[]
+  getHighEntropyValues?: (hints: string[]) => Promise<{
+    platformVersion?: string
+    fullVersionList?: UserAgentBrand[]
+  }>
+}
+
 const REQUEST_TIMEOUT = 4000
 
 function text(value: unknown): string {
@@ -24,6 +36,11 @@ function version(value: string | undefined): string {
 
 function readUserAgent(): string {
   return typeof navigator === "undefined" ? "" : navigator.userAgent
+}
+
+function readUserAgentData(): UserAgentDataLike | undefined {
+  if (typeof navigator === "undefined") return undefined
+  return (navigator as Navigator & { userAgentData?: UserAgentDataLike }).userAgentData
 }
 
 /** Parse the browser-provided environment without adding another network request. */
@@ -65,6 +82,47 @@ export function detectVisitorEnvironment(userAgent = readUserAgent()): VisitorEn
   if (browserMatch) browser += ` ${browserMatch[1].split(".")[0]}`
 
   return { device, browser, os }
+}
+
+function browserFromBrands(brands: UserAgentBrand[], mobile: boolean): string {
+  const candidates = [
+    { pattern: /Microsoft Edge/i, name: mobile ? "Edge Mobile" : "Edge" },
+    { pattern: /Google Chrome/i, name: "Chrome" },
+    { pattern: /Opera/i, name: "Opera" },
+    { pattern: /^Chromium$/i, name: "Chromium" },
+  ]
+  for (const candidate of candidates) {
+    const match = brands.find(({ brand }) => candidate.pattern.test(brand))
+    if (match) return `${candidate.name} ${match.version.split(".")[0]}`
+  }
+  return ""
+}
+
+/** Prefer high-entropy Client Hints because reduced Android UAs report Android 10. */
+export async function resolveVisitorEnvironment(
+  userAgent = readUserAgent(),
+  userAgentData = readUserAgentData(),
+): Promise<VisitorEnvironment> {
+  const fallback = detectVisitorEnvironment(userAgent)
+  const android = /Android/i.test(userAgent) || userAgentData?.platform === "Android"
+  if (!userAgentData?.getHighEntropyValues) {
+    return android ? { ...fallback, os: "未知" } : fallback
+  }
+
+  try {
+    const values = await userAgentData.getHighEntropyValues(["platformVersion", "fullVersionList"])
+    const platformMajor = values.platformVersion?.split(".")[0]
+    const os = android && platformMajor && /^\d+$/.test(platformMajor) && Number(platformMajor) > 0
+      ? `Android ${platformMajor}`
+      : android ? "未知" : fallback.os
+    const browser = browserFromBrands(
+      values.fullVersionList ?? userAgentData.brands ?? [],
+      userAgentData.mobile ?? fallback.device === "手机",
+    ) || fallback.browser
+    return { ...fallback, browser, os }
+  } catch {
+    return android ? { ...fallback, os: "未知" } : fallback
+  }
 }
 
 export function countryLabel(country: string, countryCode: string): string {
@@ -117,7 +175,9 @@ let pending: Promise<VisitorInfo | null> | null = null
 export function loadVisitor(): Promise<VisitorInfo | null> {
   if (pending) return pending
 
+  const environment = resolveVisitorEnvironment()
   pending = request("https://get.geojs.io/v1/ip/geo.json")
     .then((info) => info ?? request("https://ipapi.co/json/"))
+    .then(async (info) => info ? { ...info, ...await environment } : null)
   return pending
 }
