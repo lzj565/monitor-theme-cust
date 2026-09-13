@@ -83,8 +83,7 @@ export default function App() {
 
   useEffect(() => {
     if (open !== null) return
-    const timer = setTimeout(() => void loadVisitor().then(setVisitor), 2000)
-    return () => clearTimeout(timer)
+    void loadVisitor().then(setVisitor)
   }, [open])
 
   // The status page was closed while this tab was open. `me` holds whatever it
