@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react"
-import { Building2, Globe2, MapPin, Wifi, X } from "lucide-react"
+import { Building2, Cpu, Globe2, MapPin, Smartphone, Wifi, X } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
-import type { VisitorInfo } from "@/lib/visitor"
+import { countryLabel, type VisitorInfo } from "@/lib/visitor"
 import { cn } from "@/lib/utils"
 
 function location(info: VisitorInfo) {
-  return [info.country, info.region, info.city].filter(Boolean).join(" · ")
+  return [countryLabel(info.country, info.countryCode), info.region, info.city].filter(Boolean).join(" · ")
 }
 
 function Detail({ icon: Icon, label, value }: { icon: typeof Globe2; label: string; value: string }) {
@@ -72,7 +72,9 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
             <Wifi className="size-4" />
           </span>
           <div>
-            <p className="text-sm font-medium">欢迎访问</p>
+            <p className="text-sm font-medium">
+              {info.country ? `欢迎来自 ${countryLabel(info.country, info.countryCode)} 的访客` : "欢迎访问"}
+            </p>
             <p className="text-[11px] text-muted-foreground">检测到您的网络位置</p>
           </div>
         </div>
@@ -80,6 +82,9 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
           <Detail icon={Globe2} label="IP" value={info.ip} />
           <Detail icon={MapPin} label="位置" value={location(info)} />
           <Detail icon={Building2} label="运营商" value={info.organization} />
+          <Detail icon={Smartphone} label="设备" value={info.device} />
+          <Detail icon={Globe2} label="浏览器" value={info.browser} />
+          <Detail icon={Cpu} label="系统" value={info.os} />
         </div>
         <p className="text-[10px] text-muted-foreground">位置根据 IP 估算，仅供参考</p>
       </Card>
