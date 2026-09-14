@@ -31,14 +31,15 @@ function Detail({ icon: Icon, label, value, tone }: {
   value: string
   tone: keyof typeof DETAIL_TONES
 }) {
-  if (!value) return null
+  const displayValue = value.trim()
+  if (!displayValue || /^(?:未知|unknown|n\/a|null|-)$/i.test(displayValue)) return null
   return (
     <div className="flex min-w-0 items-start gap-2 text-xs first:pr-7">
       <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-md", DETAIL_TONES[tone])}>
         <Icon className="size-3" />
       </span>
       <span className="w-10 shrink-0 pt-0.5 text-muted-foreground">{label}</span>
-      <span className="min-w-0 break-words pt-0.5 leading-4" title={value}>{value}</span>
+      <span className="min-w-0 break-words pt-0.5 leading-4" title={displayValue}>{displayValue}</span>
     </div>
   )
 }

@@ -40,7 +40,7 @@ if (highEntropyAndroid.os !== "Android 16" || highEntropyAndroid.browser !== "Ed
 }
 
 const unavailableHints = await resolveVisitorEnvironment(reducedAndroid, undefined)
-if (unavailableHints.os !== "未知" || unavailableHints.browser !== "Edge Mobile 151") {
+if (unavailableHints.os !== "" || unavailableHints.browser !== "Edge Mobile 151") {
   throw new Error("does not trust a reduced Android version")
 }
 
@@ -48,11 +48,11 @@ const failedHints = await resolveVisitorEnvironment(reducedAndroid, {
   platform: "Android",
   getHighEntropyValues: async () => { throw new Error("blocked") },
 })
-if (failedHints.os !== "未知") throw new Error("handles rejected client hints")
+if (failedHints.os !== "") throw new Error("hides rejected client hints")
 
 const frozenMac =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15"
-if (detectVisitorEnvironment(frozenMac).os !== "未知") {
+if (detectVisitorEnvironment(frozenMac).os !== "") {
   throw new Error("does not trust the frozen macOS user agent version")
 }
 
@@ -63,17 +63,33 @@ const highEntropyMac = await resolveVisitorEnvironment(frozenMac, {
 if (highEntropyMac.os !== "macOS 26.6.2") throw new Error("uses exact macOS platform version hints")
 
 const unavailableMacHints = await resolveVisitorEnvironment(frozenMac, undefined)
-if (unavailableMacHints.os !== "未知") throw new Error("uses unknown for frozen macOS without hints")
+if (unavailableMacHints.os !== "") throw new Error("hides frozen macOS without hints")
 
 const ambiguousWindows = detectVisitorEnvironment(
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151.0.0.0 Safari/537.36",
 )
-if (ambiguousWindows.os !== "未知") throw new Error("does not map compatibility Windows versions")
+if (ambiguousWindows.os !== "") throw new Error("does not map compatibility Windows versions")
 
 const frozenIos = detectVisitorEnvironment(
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.0 Mobile Safari/604.1",
 )
-if (frozenIos.os !== "未知") throw new Error("does not trust frozen iOS user agent versions")
+if (frozenIos.os !== "") throw new Error("does not trust frozen iOS user agent versions")
+
+const unrecognized = detectVisitorEnvironment("custom-client/1.0")
+if (unrecognized.device !== "" || unrecognized.browser !== "" || unrecognized.os !== "") {
+  throw new Error("hides unrecognized environment fields")
+}
+
+const placeholders = normalizeVisitor({
+  ip: "203.0.113.8",
+  country: "Unknown",
+  region: "未知",
+  city: "N/A",
+  organization: "-",
+}, "custom-client/1.0")
+if (!placeholders || placeholders.country || placeholders.region || placeholders.city || placeholders.organization) {
+  throw new Error("removes provider placeholder values")
+}
 
 if (countryLabel("Japan", "JP") !== "Japan 日本") throw new Error("formats bilingual country name")
 

@@ -27,7 +27,9 @@ export type UserAgentDataLike = {
 const REQUEST_TIMEOUT = 4000
 
 function text(value: unknown): string {
-  return typeof value === "string" ? value.trim().slice(0, 120) : ""
+  if (typeof value !== "string") return ""
+  const normalized = value.trim().slice(0, 120)
+  return /^(?:未知|unknown|n\/a|null|-)$/i.test(normalized) ? "" : normalized
 }
 
 function version(value: string | undefined): string {
@@ -45,12 +47,13 @@ function readUserAgentData(): UserAgentDataLike | undefined {
 
 /** Parse the browser-provided environment without adding another network request. */
 export function detectVisitorEnvironment(userAgent = readUserAgent()): VisitorEnvironment {
-  const mobile = /Mobile|Android|iPhone|iPod/i.test(userAgent)
+  const mobile = /Mobile|iPhone|iPod|Android.*Mobile/i.test(userAgent)
   const tablet = /iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)
-  const device = tablet ? "平板" : mobile ? "手机" : "桌面"
+  const desktop = /Windows NT|Macintosh|Mac OS X|X11|CrOS|Linux/i.test(userAgent)
+  const device = tablet ? "平板" : mobile ? "手机" : desktop ? "桌面" : ""
 
   const androidVersion = userAgent.match(/Android[ /]([\d.]+)/i)?.[1]
-  let os = "未知"
+  let os = ""
   if (/Android/i.test(userAgent) && !/Android 10; K(?:[;)])/i.test(userAgent) && androidVersion) {
     os = `Android ${version(androidVersion)}`
   } else if (/Linux/i.test(userAgent) && !/Android/i.test(userAgent)) os = "Linux"
@@ -62,7 +65,7 @@ export function detectVisitorEnvironment(userAgent = readUserAgent()): VisitorEn
     || userAgent.match(/Firefox\/([\d.]+)/i)
     || userAgent.match(/(?:CriOS|Chrome)\/([\d.]+)/i)
     || userAgent.match(/Version\/([\d.]+).*Safari/i)
-  let browser = "未知"
+  let browser = ""
   if (/EdgA\//i.test(userAgent)) browser = "Edge Mobile"
   else if (/EdgiOS\//i.test(userAgent)) browser = "Edge iOS"
   else if (/Edg\//i.test(userAgent)) browser = "Edge"
@@ -110,7 +113,7 @@ export async function resolveVisitorEnvironment(
   const ios = /iPhone|iPad|iPod/i.test(userAgent) || userAgentData?.platform === "iOS"
   const needsTrustedVersion = android || macOS || windows || ios
   if (!userAgentData?.getHighEntropyValues) {
-    return needsTrustedVersion ? { ...fallback, os: "未知" } : fallback
+    return needsTrustedVersion ? { ...fallback, os: "" } : fallback
   }
 
   try {
@@ -119,14 +122,14 @@ export async function resolveVisitorEnvironment(
     const os = android && platformVersion
       ? `Android ${platformVersion.split(".")[0]}`
       : macOS && platformVersion ? `macOS ${platformVersion}`
-      : needsTrustedVersion ? "未知" : fallback.os
+      : needsTrustedVersion ? "" : fallback.os
     const browser = browserFromBrands(
       values.fullVersionList ?? userAgentData.brands ?? [],
       userAgentData.mobile ?? fallback.device === "手机",
     ) || fallback.browser
     return { ...fallback, browser, os }
   } catch {
-    return needsTrustedVersion ? { ...fallback, os: "未知" } : fallback
+    return needsTrustedVersion ? { ...fallback, os: "" } : fallback
   }
 }
 
