@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Building2, Cpu, Globe2, MapPin, Smartphone, Wifi, X } from "lucide-react"
+import { Building2, Cpu, Globe2, MapPin, Smartphone, X } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import { countryLabel, type VisitorInfo } from "@/lib/visitor"
@@ -81,18 +81,7 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
         >
           <X className="size-4" />
         </button>
-        <div className="flex items-center gap-2 pr-6">
-          <span className="grid size-8 place-items-center rounded-full bg-metric-cyan/12 text-metric-cyan">
-            <Wifi className="size-4" />
-          </span>
-          <div>
-            <p className="text-sm font-medium">
-              {info.country ? `欢迎来自 ${countryLabel(info.country, info.countryCode)} 的访客` : "欢迎访问"}
-            </p>
-            <p className="tnum text-[11px] text-muted-foreground">当前时间 {currentTime}</p>
-          </div>
-        </div>
-        <div className="space-y-2 border-t pt-3">
+        <div className="space-y-2">
           <Detail icon={Globe2} label="IP" value={info.ip} />
           <Detail icon={MapPin} label="位置" value={location(info)} />
           <Detail icon={Building2} label="运营商" value={info.organization} />
@@ -100,6 +89,7 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
           <Detail icon={Globe2} label="浏览器" value={info.browser} />
           <Detail icon={Cpu} label="系统" value={info.os} />
         </div>
+        <p className="tnum border-t pt-2 text-[11px] text-muted-foreground">当前时间 {currentTime}</p>
       </Card>
     </aside>
   )
