@@ -1,9 +1,16 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Building2, Cpu, Globe2, MapPin, Smartphone, Wifi, X } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import { countryLabel, type VisitorInfo } from "@/lib/visitor"
 import { cn } from "@/lib/utils"
+
+const CURRENT_TIME = new Intl.DateTimeFormat("zh-CN", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+})
 
 function location(info: VisitorInfo) {
   return [countryLabel(info.country, info.countryCode), info.region, info.city].filter(Boolean).join(" · ")
@@ -24,6 +31,13 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const remaining = useRef(10000)
   const started = useRef(0)
+  const [currentTime, setCurrentTime] = useState(() => CURRENT_TIME.format(new Date()))
+
+  useEffect(() => {
+    const update = () => setCurrentTime(CURRENT_TIME.format(new Date()))
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     const start = () => {
@@ -75,7 +89,7 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
             <p className="text-sm font-medium">
               {info.country ? `欢迎来自 ${countryLabel(info.country, info.countryCode)} 的访客` : "欢迎访问"}
             </p>
-            <p className="text-[11px] text-muted-foreground">检测到您的网络位置</p>
+            <p className="tnum text-[11px] text-muted-foreground">当前时间 {currentTime}</p>
           </div>
         </div>
         <div className="space-y-2 border-t pt-3">
@@ -86,7 +100,6 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
           <Detail icon={Globe2} label="浏览器" value={info.browser} />
           <Detail icon={Cpu} label="系统" value={info.os} />
         </div>
-        <p className="text-[10px] text-muted-foreground">位置根据 IP 估算，仅供参考</p>
       </Card>
     </aside>
   )
