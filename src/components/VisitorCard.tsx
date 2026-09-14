@@ -12,8 +12,8 @@ function location(info: VisitorInfo) {
 function Detail({ icon: Icon, label, value }: { icon: typeof Globe2; label: string; value: string }) {
   if (!value) return null
   return (
-    <div className="flex min-w-0 items-center gap-1.5 text-[11px]">
-      <Icon className="size-3 shrink-0 text-metric-cyan" />
+    <div className="flex min-w-0 items-center gap-2 text-xs">
+      <Icon className="size-3.5 shrink-0 text-metric-cyan" />
       <span className="shrink-0 text-muted-foreground">{label}</span>
       <span className="truncate" title={value}>{value}</span>
     </div>
@@ -53,11 +53,11 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
       onPointerEnter={pause}
       onPointerLeave={resume}
       className={cn(
-        "fixed inset-x-3 bottom-3 z-30 w-auto sm:left-4 sm:right-auto sm:w-72",
+        "fixed inset-x-3 bottom-3 z-30 w-auto sm:left-auto sm:right-4 sm:w-80",
         "visitor-card-in",
       )}
     >
-      <Card className="relative gap-2 p-3 shadow-2xl shadow-metric-blue/10">
+      <Card className="relative gap-3 p-4 shadow-2xl shadow-metric-blue/10">
         <button
           type="button"
           aria-label="关闭访客信息"
@@ -67,18 +67,18 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
         >
           <X className="size-4" />
         </button>
-        <div className="flex items-center gap-1.5 pr-5">
-          <span className="grid size-7 place-items-center rounded-full bg-metric-cyan/12 text-metric-cyan">
-            <Wifi className="size-3.5" />
+        <div className="flex items-center gap-2 pr-6">
+          <span className="grid size-8 place-items-center rounded-full bg-metric-cyan/12 text-metric-cyan">
+            <Wifi className="size-4" />
           </span>
           <div>
-            <p className="text-xs font-medium">
+            <p className="text-sm font-medium">
               {info.country ? `欢迎来自 ${countryLabel(info.country, info.countryCode)} 的访客` : "欢迎访问"}
             </p>
-            <p className="text-[10px] text-muted-foreground">检测到您的网络位置</p>
+            <p className="text-[11px] text-muted-foreground">检测到您的网络位置</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 border-t pt-2">
+        <div className="space-y-2 border-t pt-3">
           <Detail icon={Globe2} label="IP" value={info.ip} />
           <Detail icon={MapPin} label="位置" value={location(info)} />
           <Detail icon={Building2} label="运营商" value={info.organization} />
@@ -86,7 +86,7 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
           <Detail icon={Globe2} label="浏览器" value={info.browser} />
           <Detail icon={Cpu} label="系统" value={info.os} />
         </div>
-        <p className="text-[9px] leading-tight text-muted-foreground">位置根据 IP 估算，仅供参考</p>
+        <p className="text-[10px] text-muted-foreground">位置根据 IP 估算，仅供参考</p>
       </Card>
     </aside>
   )
