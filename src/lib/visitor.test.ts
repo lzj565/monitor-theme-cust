@@ -50,6 +50,31 @@ const failedHints = await resolveVisitorEnvironment(reducedAndroid, {
 })
 if (failedHints.os !== "未知") throw new Error("handles rejected client hints")
 
+const frozenMac =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15"
+if (detectVisitorEnvironment(frozenMac).os !== "未知") {
+  throw new Error("does not trust the frozen macOS user agent version")
+}
+
+const highEntropyMac = await resolveVisitorEnvironment(frozenMac, {
+  platform: "macOS",
+  getHighEntropyValues: async () => ({ platformVersion: "26.6.2" }),
+})
+if (highEntropyMac.os !== "macOS 26.6.2") throw new Error("uses exact macOS platform version hints")
+
+const unavailableMacHints = await resolveVisitorEnvironment(frozenMac, undefined)
+if (unavailableMacHints.os !== "未知") throw new Error("uses unknown for frozen macOS without hints")
+
+const ambiguousWindows = detectVisitorEnvironment(
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151.0.0.0 Safari/537.36",
+)
+if (ambiguousWindows.os !== "未知") throw new Error("does not map compatibility Windows versions")
+
+const frozenIos = detectVisitorEnvironment(
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.0 Mobile Safari/604.1",
+)
+if (frozenIos.os !== "未知") throw new Error("does not trust frozen iOS user agent versions")
+
 if (countryLabel("Japan", "JP") !== "Japan 日本") throw new Error("formats bilingual country name")
 
 if (normalizeVisitor({ city: "Beijing" }) !== null) throw new Error("rejects missing IP")

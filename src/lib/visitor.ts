@@ -49,18 +49,11 @@ export function detectVisitorEnvironment(userAgent = readUserAgent()): VisitorEn
   const tablet = /iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)
   const device = tablet ? "平板" : mobile ? "手机" : "桌面"
 
-  const osMatch = userAgent.match(/Android[ /]([\d.]+)/i)
-    || userAgent.match(/(?:iPhone OS|CPU OS) ([\d_]+)/i)
-    || userAgent.match(/Windows NT ([\d.]+)/i)
-    || userAgent.match(/Mac OS X ([\d_]+)/i)
+  const androidVersion = userAgent.match(/Android[ /]([\d.]+)/i)?.[1]
   let os = "未知"
-  if (/Android/i.test(userAgent)) os = `Android ${version(osMatch?.[1])}`.trim()
-  else if (/iPhone|iPad|iPod/i.test(userAgent)) os = `iOS ${version(osMatch?.[1])}`.trim()
-  else if (/Windows NT/i.test(userAgent)) {
-    const windows = { "10.0": "Windows 10/11", "6.1": "Windows 7" }[osMatch?.[1] ?? ""]
-    os = windows ?? "Windows"
-  } else if (/Mac OS X/i.test(userAgent)) os = `macOS ${version(osMatch?.[1])}`.trim()
-  else if (/Linux/i.test(userAgent)) os = "Linux"
+  if (/Android/i.test(userAgent) && !/Android 10; K(?:[;)])/i.test(userAgent) && androidVersion) {
+    os = `Android ${version(androidVersion)}`
+  } else if (/Linux/i.test(userAgent) && !/Android/i.test(userAgent)) os = "Linux"
 
   const browserMatch = userAgent.match(/EdgA?\/([\d.]+)/i)
     || userAgent.match(/EdgiOS\/([\d.]+)/i)
@@ -98,30 +91,42 @@ function browserFromBrands(brands: UserAgentBrand[], mobile: boolean): string {
   return ""
 }
 
-/** Prefer high-entropy Client Hints because reduced Android UAs report Android 10. */
+function trustedPlatformVersion(value: string | undefined): string {
+  const parts = value?.split(".") ?? []
+  return parts.length > 0 && parts.length <= 3
+    && parts.every((part) => /^\d+$/.test(part)) && Number(parts[0]) > 0
+    ? parts.join(".") : ""
+}
+
+/** Use exact platform hints when available; never present reduced UA versions as real OS versions. */
 export async function resolveVisitorEnvironment(
   userAgent = readUserAgent(),
   userAgentData = readUserAgentData(),
 ): Promise<VisitorEnvironment> {
   const fallback = detectVisitorEnvironment(userAgent)
   const android = /Android/i.test(userAgent) || userAgentData?.platform === "Android"
+  const macOS = /Mac OS X/i.test(userAgent) || userAgentData?.platform === "macOS"
+  const windows = /Windows NT/i.test(userAgent) || userAgentData?.platform === "Windows"
+  const ios = /iPhone|iPad|iPod/i.test(userAgent) || userAgentData?.platform === "iOS"
+  const needsTrustedVersion = android || macOS || windows || ios
   if (!userAgentData?.getHighEntropyValues) {
-    return android ? { ...fallback, os: "未知" } : fallback
+    return needsTrustedVersion ? { ...fallback, os: "未知" } : fallback
   }
 
   try {
     const values = await userAgentData.getHighEntropyValues(["platformVersion", "fullVersionList"])
-    const platformMajor = values.platformVersion?.split(".")[0]
-    const os = android && platformMajor && /^\d+$/.test(platformMajor) && Number(platformMajor) > 0
-      ? `Android ${platformMajor}`
-      : android ? "未知" : fallback.os
+    const platformVersion = trustedPlatformVersion(values.platformVersion)
+    const os = android && platformVersion
+      ? `Android ${platformVersion.split(".")[0]}`
+      : macOS && platformVersion ? `macOS ${platformVersion}`
+      : needsTrustedVersion ? "未知" : fallback.os
     const browser = browserFromBrands(
       values.fullVersionList ?? userAgentData.brands ?? [],
       userAgentData.mobile ?? fallback.device === "手机",
     ) || fallback.browser
     return { ...fallback, browser, os }
   } catch {
-    return android ? { ...fallback, os: "未知" } : fallback
+    return needsTrustedVersion ? { ...fallback, os: "未知" } : fallback
   }
 }
 
