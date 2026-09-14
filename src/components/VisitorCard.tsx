@@ -67,7 +67,7 @@ export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () 
       onPointerEnter={pause}
       onPointerLeave={resume}
       className={cn(
-        "fixed inset-x-3 bottom-3 z-30 w-auto sm:left-auto sm:right-4 sm:w-80",
+        "fixed inset-x-3 bottom-3 z-30 w-auto sm:left-auto sm:right-4 sm:w-72",
         "visitor-card-in",
       )}
     >
