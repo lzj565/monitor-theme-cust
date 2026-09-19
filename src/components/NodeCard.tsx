@@ -7,7 +7,7 @@ import { Meter } from "@/components/Meter"
 import { NodeProbeSummary } from "@/components/ProbeHistory"
 import { SegmentedProgress } from "@/components/SegmentedProgress"
 import type { Node } from "@/lib/api"
-import { countryFlag, countryName, getEffectiveCountry } from "@/lib/country"
+import { countryCodeToFlag, countryName, getEffectiveCountry } from "@/lib/country"
 import {
   bytes, daysUntil, FOREVER, osName, pair, percent, rate, rateSeverity, severity, uptime,
   type RateSeverity, type Severity,
@@ -66,9 +66,8 @@ export function CountryBadge({ country }: { country: string | null }) {
   if (!country) return null
   const name = countryName(country)
   return (
-    <Badge variant="outline" className="shrink-0 gap-1 font-normal text-muted-foreground" aria-label={name}>
-      <span aria-hidden="true">{countryFlag(country)}</span>
-      <span>{name}</span>
+    <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground" aria-label={name}>
+      {name}
     </Badge>
   )
 }
@@ -148,8 +147,13 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
     >
       <div className="relative flex items-start justify-between gap-3 overflow-visible">
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <h3 className="truncate font-medium">{node.name}</h3>
+          <div className="flex min-w-0 items-center gap-2">
+            {country && (
+              <span className="shrink-0 text-2xl leading-none" aria-hidden="true">
+                {countryCodeToFlag(country)}
+              </span>
+            )}
+            <h3 className="min-w-0 flex-1 truncate font-medium">{node.name}</h3>
             <CountryBadge country={country} />
           </div>
           <p

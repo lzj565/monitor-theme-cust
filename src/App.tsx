@@ -1,11 +1,13 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { Moon, Sun, Wrench } from "lucide-react"
 
+import { CountryFilter } from "@/components/CountryFilter"
 import { NodeCard } from "@/components/NodeCard"
 import { Summary } from "@/components/Summary"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, useNodes, type Node } from "@/lib/api"
+import { getCountryStats, getEffectiveCountry } from "@/lib/country"
 import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
 import { VisitorCard } from "@/components/VisitorCard"
 
@@ -61,6 +63,7 @@ export default function App() {
   const [meError, setMeError] = useState("")
   const { nodes, error, closed } = useNodes()
   const [open, go] = useNodeRoute()
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
   const [visitor, setVisitor] = useState<VisitorInfo | null>(null)
   const closeVisitor = useCallback(() => setVisitor(null), [])
 
@@ -100,8 +103,25 @@ export default function App() {
     if (me && !me.public_page && !me.authed) location.href = "/admin/"
   }, [me])
 
-  const sorted = [...(nodes ?? [])].sort((a, b) => a.sort - b.sort || a.id - b.id)
+  const sorted = useMemo(
+    () => [...(nodes ?? [])].sort((a, b) => a.sort - b.sort || a.id - b.id),
+    [nodes],
+  )
+  const countryStats = useMemo(() => getCountryStats(sorted), [sorted])
+  const filteredNodes = useMemo(
+    () => selectedCountry
+      ? sorted.filter((node) => getEffectiveCountry(node) === selectedCountry)
+      : sorted,
+    [selectedCountry, sorted],
+  )
   const selected = sorted.find((n) => n.id === open)
+
+  useEffect(() => {
+    if (selectedCountry && !countryStats.some((item) => item.country === selectedCountry)) {
+      // oxlint-disable-next-line react/set-state-in-effect
+      setSelectedCountry(null)
+    }
+  }, [countryStats, selectedCountry])
 
   // `/node/{id}` is a page people bookmark and share, so the tab needs the node's
   // name. The site name rather than a fixed string, since the hub lets an operator
@@ -168,11 +188,18 @@ export default function App() {
         ) : (
           <>
             <Summary nodes={sorted} />
+            <CountryFilter
+              stats={countryStats}
+              selectedCountry={selectedCountry}
+              onChange={setSelectedCountry}
+            />
             {sorted.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">还没有节点</p>
+            ) : filteredNodes.length === 0 ? (
+              <p className="py-16 text-center text-sm text-muted-foreground">当前筛选暂无节点</p>
             ) : (
               <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {sorted.map((n: Node) => (
+                {filteredNodes.map((n: Node) => (
                   <NodeCard key={n.id} node={n} onOpen={() => go(n.id)} />
                 ))}
               </div>
