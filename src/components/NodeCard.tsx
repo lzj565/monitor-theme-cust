@@ -247,16 +247,16 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               </span>
             </span>
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
+              <Inbox className="size-3 text-metric-green" />
+              <span className="text-muted-foreground">入站</span>
+              <span className="truncate">{bytes(node.total_rx)}</span>
+            </span>
+            <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowUp className="size-3 text-metric-blue" />
               <span className="text-muted-foreground">上行</span>
               <span className={cn("truncate", m ? rateTone[rateSeverity(m.net_tx)] : "text-muted-foreground")}>
                 {m ? rate(m.net_tx) : "—"}
               </span>
-            </span>
-            <span className="tnum inline-flex min-w-0 items-center gap-1.5">
-              <Inbox className="size-3 text-metric-green" />
-              <span className="text-muted-foreground">入站</span>
-              <span className="truncate">{bytes(node.total_rx)}</span>
             </span>
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <Send className="size-3 text-metric-blue" />

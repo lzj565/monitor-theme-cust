@@ -27,22 +27,22 @@ function Tile({ icon: Icon, label, children, tone }: {
 }
 
 /**
- * In and out side by side, the form every traffic figure on this page takes.
- * Stacked below sm, where two tiles share a phone's width and "23.3 MB" has
- * roughly 70px available.
+ * In and out side by side by default. A stacked flow is used when two traffic
+ * periods sit beside each other, so each period keeps its directions vertical.
  */
-function Flow({ down, up, className, kind = "rate", downTone, upTone }: {
+function Flow({ down, up, className, kind = "rate", downTone, upTone, stacked = false }: {
   down: string
   up: string
   className?: string
   kind?: "rate" | "traffic"
   downTone?: string
   upTone?: string
+  stacked?: boolean
 }) {
   const DownIcon = kind === "rate" ? ArrowDown : Inbox
   const UpIcon = kind === "rate" ? ArrowUp : Send
   return (
-    <div className={cn("tnum grid grid-cols-1 gap-x-2 sm:grid-cols-2", className)}>
+    <div className={cn("tnum grid gap-x-2", stacked ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2", className)}>
       <span className="inline-flex items-center gap-1">
         <DownIcon className="size-3 shrink-0 text-metric-green" />
         <span className="text-muted-foreground">{kind === "rate" ? "下行" : "入站"}</span>
@@ -115,16 +115,33 @@ export function Summary({ nodes }: { nodes: Node[] }) {
         </div>
       </Tile>
 
-      <Tile icon={ArrowDownUp} label="今日流量" tone="text-metric-green">
-        <Flow
-          down={bytes(sum((n) => n.day_rx))}
-          up={bytes(sum((n) => n.day_tx))}
-          className="mt-1 text-sm font-semibold"
-          kind="traffic"
-        />
-        <div className="mt-2 text-xs text-muted-foreground">总流量</div>
-        <Flow down={bytes(sum((n) => n.total_rx))} up={bytes(sum((n) => n.total_tx))} className="mt-0.5 text-sm" kind="traffic" />
-      </Tile>
+      <Card className="gap-0 p-3">
+        <div className="tnum grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 sm:gap-y-0">
+          <div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ArrowDownUp className="size-3.5 text-metric-green" />
+              今日流量
+            </div>
+            <Flow
+              down={bytes(sum((n) => n.day_rx))}
+              up={bytes(sum((n) => n.day_tx))}
+              className="mt-1 text-sm font-semibold"
+              kind="traffic"
+              stacked
+            />
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">总流量</div>
+            <Flow
+              down={bytes(sum((n) => n.total_rx))}
+              up={bytes(sum((n) => n.total_tx))}
+              className="mt-1 text-sm"
+              kind="traffic"
+              stacked
+            />
+          </div>
+        </div>
+      </Card>
 
       <Tile icon={Gauge} label="实时网速" tone="text-metric-blue">
         <Flow
