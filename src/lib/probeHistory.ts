@@ -38,6 +38,19 @@ export function latestProbeSlot(target: ProbeHistoryTarget) {
   return target.history.findLast((slot) => slot.hasData)
 }
 
+/** Keep plotted probes in stable numeric-id order, regardless of ping sample order. */
+export function orderedProbeIds(
+  probes: Record<string, string>,
+  points: Pick<ProbePingPoint, "task_id">[],
+) {
+  const reported = new Set(points.map((point) => point.task_id).filter(Number.isFinite))
+  const ids = new Set([
+    ...Object.keys(probes).map(Number).filter(Number.isFinite),
+    ...reported,
+  ])
+  return [...ids].filter((id) => reported.has(id)).sort((a, b) => a - b)
+}
+
 /**
  * One-hour loss after the first success visible to this frontend. The hub's
  * exact whole-window ratio is safe once activation predates the hour; during

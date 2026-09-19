@@ -16,7 +16,7 @@ import {
 } from "@/lib/format"
 import { latencyP90 } from "@/lib/latency"
 import { usageColor, usageGradientStops } from "@/lib/metricColor"
-import { formatPacketLoss, getLatencyColor } from "@/lib/probeHistory"
+import { formatPacketLoss, getLatencyColor, orderedProbeIds } from "@/lib/probeHistory"
 
 type Point = {
   ts: number
@@ -257,13 +257,14 @@ export function NodeDetail({ node }: { node: Node }) {
   }, [node.id, hours, tab])
 
   const m = node.metrics
-  // One series per probe that reported, labelled from the names the samples
-  // arrived with. Memoised, as are the two below: the node prop changes every few
-  // seconds as live metrics arrive, and rebuilding the chart's data array on those
-  // renders would reset the brush.
+  // One series per probe that reported, ordered by the stable numeric IDs from
+  // the hub's probes map rather than by whichever ping sample arrived first.
+  // Memoised, as are the two below: the node prop changes every few seconds as
+  // live metrics arrive, and rebuilding the chart's data array on those renders
+  // would reset the brush.
   const pingSeries = useMemo(
     () =>
-      [...new Set((data?.ping ?? []).map((p) => p.task_id))]
+      orderedProbeIds(data?.probes ?? {}, data?.ping ?? [])
         .map((id) => {
           // Timeouts are retained: dropping them would draw a probe losing half
           // its packets as an unbroken line, and one that never answered not at

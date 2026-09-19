@@ -1,6 +1,6 @@
 import {
   activeWindowPacketLoss, formatPacketLoss, getLatencyColor, getPacketLossColor, historySlots,
-  latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
+  latestProbeSlot, orderedProbeIds, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
 } from "./probeHistory.ts"
 
 let failed = 0
@@ -97,6 +97,21 @@ eq(
   )
   eq(targetsWithData(targets, 3).map((target) => target.id), [2, 3, 4], "首页取过滤后的前三个")
 }
+
+eq(
+  orderedProbeIds(
+    { "1": "浙江联通", "2": "浙江电信", "3": "浙江移动", "4": "google", "5": "cloudflare" },
+    [{ task_id: 4 }, { task_id: 1 }, { task_id: 3 }],
+  ),
+  [1, 3, 4],
+  "详情图表按 probes 数字 ID 排序并排除无 ping 数据",
+)
+
+eq(
+  orderedProbeIds({ "1": "浙江联通", "3": "浙江移动" }, [{ task_id: 9 }, { task_id: 3 }, { task_id: 9 }]),
+  [3, 9],
+  "详情图表保留未出现在 probes 映射中的 ping ID",
+)
 
 if (failed) process.exit(1)
 console.log("probe history 校验通过")
