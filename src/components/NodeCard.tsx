@@ -194,7 +194,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
                   ))}
                 </span>
               ) : "—"}
-              progress={<SegmentedProgress value={m?.cpu ?? 0} segments={16} className="mt-1.5" />}
+              progress={<SegmentedProgress value={m?.cpu ?? 0} segments={16} tone="blue" className="mt-1.5" />}
               tone="blue"
               color={m ? usageColor(m.cpu) : undefined}
             />
@@ -202,6 +202,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               label={<span className="inline-flex items-center gap-1.5"><MemoryStick className="size-3.5 text-metric-purple" />内存</span>}
               pct={m ? percent(m.mem_used, m.mem_total) : null}
               foot={m ? pair(m.mem_used, m.mem_total) : bytes(node.mem_total)}
+              progress={<SegmentedProgress value={m ? percent(m.mem_used, m.mem_total) : 0} segments={16} tone="purple" className="mt-1.5" />}
               tone="purple"
               color={m ? usageColor(percent(m.mem_used, m.mem_total)) : undefined}
             />
@@ -209,6 +210,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               label={<span className="inline-flex items-center gap-1.5"><HardDrive className="size-3.5 text-metric-orange" />硬盘</span>}
               pct={m ? percent(m.disk_used, m.disk_total) : null}
               foot={m ? pair(m.disk_used, m.disk_total) : bytes(node.disk_total)}
+              progress={<SegmentedProgress value={m ? percent(m.disk_used, m.disk_total) : 0} segments={16} tone="orange" className="mt-1.5" />}
               tone="orange"
               color={m ? usageColor(percent(m.disk_used, m.disk_total)) : undefined}
             />
@@ -217,6 +219,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               pct={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : null}
               empty={FOREVER}
               foot={trafficFoot(node)}
+              progress={<SegmentedProgress value={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : 0} segments={16} tone="green" className="mt-1.5" />}
               tone="green"
             />
           </div>

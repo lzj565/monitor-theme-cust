@@ -3,16 +3,27 @@ import { cn } from "@/lib/utils"
 export type SegmentedProgressProps = {
   value: number
   segments?: number
+  tone?: SegmentedProgressTone
   className?: string
 }
 
+export type SegmentedProgressTone = "blue" | "purple" | "orange" | "green" | "yellow"
+
 const DEFAULT_SEGMENTS = 16
+
+const tones: Record<SegmentedProgressTone, string> = {
+  blue: "bg-metric-blue",
+  purple: "bg-metric-purple",
+  orange: "bg-metric-orange",
+  green: "bg-metric-green",
+  yellow: "bg-metric-yellow",
+}
 
 function clampPercent(value: number): number {
   return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0
 }
 
-export function SegmentedProgress({ value, segments = DEFAULT_SEGMENTS, className }: SegmentedProgressProps) {
+export function SegmentedProgress({ value, segments = DEFAULT_SEGMENTS, tone = "blue", className }: SegmentedProgressProps) {
   const percent = clampPercent(value)
   const totalSegments = Math.max(1, Math.floor(segments))
   const activeSegments = Math.ceil((percent / 100) * totalSegments)
@@ -31,7 +42,7 @@ export function SegmentedProgress({ value, segments = DEFAULT_SEGMENTS, classNam
           aria-hidden="true"
           className={cn(
             "h-2 min-w-0 flex-1 rounded-[2px]",
-            index < activeSegments ? "bg-metric-blue" : "bg-muted/80",
+            index < activeSegments ? tones[tone] : "bg-muted/80",
           )}
         />
       ))}
