@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react"
 import { Activity, ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, Inbox, MemoryStick, Network, Send } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -157,7 +158,12 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               foot={m ? (
                 <span className="inline-flex gap-2">
                   {m.load.map((n, index) => (
-                    <span key={index} style={{ color: loadColor(n) }} title={`load${index + 1}`}>
+                    <span
+                      key={index}
+                      className="metric-resource-color"
+                      style={{ "--resource-color": loadColor(n) } as CSSProperties}
+                      title={`load${index + 1}`}
+                    >
                       {n.toFixed(2)}
                     </span>
                   ))}

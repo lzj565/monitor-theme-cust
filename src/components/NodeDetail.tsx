@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type CSSProperties } from "react"
 import { median } from "d3-array"
 import { Cpu, HardDrive, MemoryStick, Network } from "lucide-react"
 import {
@@ -143,7 +143,12 @@ function UsageGradient({ id, domainPercent }: { id: string; domainPercent: numbe
   return (
     <linearGradient id={id} x1="0" y1="1" x2="0" y2="0">
       {usageGradientStops(domainPercent).map(({ offset, color }) => (
-        <stop key={offset} offset={offset} stopColor={color} />
+        <stop
+          key={offset}
+          className="metric-resource-stop"
+          style={{ "--resource-color": color } as CSSProperties}
+          offset={offset}
+        />
       ))}
     </linearGradient>
   )
@@ -600,7 +605,11 @@ export function NodeDetail({ node }: { node: Node }) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Panel
             title="CPU"
-            value={m ? <span style={{ color: usageColor(m.cpu) }}>{m.cpu.toFixed(1)}%</span> : "—"}
+            value={m ? (
+              <span className="metric-resource-color" style={{ "--resource-color": usageColor(m.cpu) } as CSSProperties}>
+                {m.cpu.toFixed(1)}%
+              </span>
+            ) : "—"}
             icon={Cpu}
             tone="text-metric-blue"
             border="border-metric-blue/35"
@@ -635,7 +644,10 @@ export function NodeDetail({ node }: { node: Node }) {
           <Panel
             title="内存"
             value={m ? (
-              <span style={{ color: usageColor(percent(m.mem_used, m.mem_total)) }}>
+              <span
+                className="metric-resource-color"
+                style={{ "--resource-color": usageColor(percent(m.mem_used, m.mem_total)) } as CSSProperties}
+              >
                 {bytes(m.mem_used)} / {bytes(m.mem_total)}
               </span>
             ) : bytes(node.mem_total)}
@@ -697,7 +709,10 @@ export function NodeDetail({ node }: { node: Node }) {
           <Panel
             title="硬盘"
             value={m ? (
-              <span style={{ color: usageColor(percent(m.disk_used, m.disk_total)) }}>
+              <span
+                className="metric-resource-color"
+                style={{ "--resource-color": usageColor(percent(m.disk_used, m.disk_total)) } as CSSProperties}
+              >
                 {bytes(m.disk_used)} / {bytes(m.disk_total)}
               </span>
             ) : bytes(node.disk_total)}

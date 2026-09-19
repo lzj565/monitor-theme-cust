@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 
 type Tone = "blue" | "purple" | "orange" | "green" | "yellow"
 type Props = {
@@ -27,18 +27,19 @@ export function Meter({ label, pct, foot, empty = "—", tone = "blue", color }:
   // than reporting 0%. What replaces the percentage depends on the reason:
   // unknown for a node with no metrics, ∞ for a plan with no limit.
   const filled = pct === null ? 0 : Math.min(100, Math.max(0, pct))
+  const resourceStyle = color ? ({ "--resource-color": color } as CSSProperties) : undefined
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-2">
         <span className="truncate text-xs text-muted-foreground">{label}</span>
-        <span className="tnum text-xs font-medium" style={color ? { color } : undefined}>
+        <span className={`tnum text-xs font-medium ${color ? "metric-resource-color" : ""}`} style={resourceStyle}>
           {pct === null ? empty : `${filled < 10 ? filled.toFixed(1) : filled.toFixed(0)}%`}
         </span>
       </div>
       <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
         <div
-          className={`h-full rounded-full ${color ? "" : tones[tone]} transition-[width] duration-500`}
-          style={{ width: `${filled}%`, ...(color ? { backgroundColor: color } : {}) }}
+          className={`h-full rounded-full ${color ? "metric-resource-fill" : tones[tone]} transition-[width] duration-500`}
+          style={{ ...resourceStyle, width: `${filled}%` }}
         />
       </div>
       <div className="tnum mt-1.5 truncate text-xs text-muted-foreground">{foot}</div>
