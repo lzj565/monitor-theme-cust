@@ -154,7 +154,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               </span>
             )}
             <h3 className="min-w-0 flex-1 truncate font-medium">{node.name}</h3>
-            <CountryBadge country={country} />
+            <Status node={node} />
           </div>
           <p
             className="relative z-10 mt-1 w-max max-w-none whitespace-nowrap overflow-visible text-xs text-muted-foreground"
@@ -163,9 +163,8 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             {systemInfo(node)}
           </p>
         </div>
-        {/* State right, identity left, one line each. */}
+        {/* Keep expiry at the right while the live state stays beside the identity. */}
         <div className="relative z-0 flex shrink-0 flex-col items-end gap-1">
-          <Status node={node} />
           <Expiry node={node} />
         </div>
       </div>
