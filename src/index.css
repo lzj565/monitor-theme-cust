@@ -44,6 +44,12 @@
   --control: rgb(225 232 241 / 86%);
   --control-active: rgb(255 255 255 / 92%);
   --grid-line: rgb(38 54 74 / 10%);
+  --metric-text-source: 35%;
+  --metric-text-base: 65%;
+  --metric-text-base-color: var(--foreground);
+  --metric-visual-source: 70%;
+  --metric-visual-base: 30%;
+  --metric-visual-base-color: var(--foreground);
   --metric-blue: #3979eb;
   --metric-purple: #9344df;
   --metric-orange: #df7517;
@@ -97,6 +103,12 @@
   --control: rgb(12 16 23 / 72%);
   --control-active: rgb(48 56 70 / 82%);
   --grid-line: rgb(255 255 255 / 7%);
+  --metric-text-source: 80%;
+  --metric-text-base: 20%;
+  --metric-text-base-color: #ffffff;
+  --metric-visual-source: 88%;
+  --metric-visual-base: 12%;
+  --metric-visual-base-color: #ffffff;
   --metric-blue: #4f8cff;
   --metric-purple: #a855f7;
   --metric-orange: #f28c28;
@@ -206,39 +218,32 @@
 .tnum { font-variant-numeric: tabular-nums; }
 
 @layer components {
-  /* Resource colours stay vivid on the dark glass. On the light surface text
-     needs more foreground mixed in for contrast, while bars and chart stops
-     need more of the resource colour to avoid looking muddy. */
-  .metric-resource-color {
-    color: color-mix(in oklch, var(--resource-color) 45%, var(--foreground) 55%);
-  }
-
+  /* Keep metric text readable in both themes while preserving the existing
+     green-to-red meaning of the source colour. sRGB mixing avoids shifting
+     red toward magenta when it is mixed with the foreground. */
+  .metric-resource-color,
   .metric-load-color {
-    color: color-mix(in oklch, var(--resource-color) 60%, var(--foreground) 40%);
+    color: color-mix(
+      in srgb,
+      var(--resource-color) var(--metric-text-source),
+      var(--metric-text-base-color) var(--metric-text-base)
+    );
   }
 
   .metric-resource-fill {
-    background-color: color-mix(in oklch, var(--resource-color) 70%, var(--foreground) 30%);
+    background-color: color-mix(
+      in srgb,
+      var(--resource-color) var(--metric-visual-source),
+      var(--metric-visual-base-color) var(--metric-visual-base)
+    );
   }
 
   .metric-resource-stop {
-    stop-color: color-mix(in oklch, var(--resource-color) 70%, var(--foreground) 30%);
-  }
-
-  .dark .metric-resource-color {
-    color: var(--resource-color);
-  }
-
-  .dark .metric-load-color {
-    color: var(--resource-color);
-  }
-
-  .dark .metric-resource-fill {
-    background-color: var(--resource-color);
-  }
-
-  .dark .metric-resource-stop {
-    stop-color: var(--resource-color);
+    stop-color: color-mix(
+      in srgb,
+      var(--resource-color) var(--metric-visual-source),
+      var(--metric-visual-base-color) var(--metric-visual-base)
+    );
   }
 
   .glass-panel {

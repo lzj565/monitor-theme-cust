@@ -44,7 +44,9 @@ function useNodeRoute() {
 function useTheme() {
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem("theme")
-    return saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches
+    // Prefer an explicitly saved choice, but make the first visit dark so the
+    // glass theme and its metric palette have a consistent default.
+    return saved ? saved === "dark" : true
   })
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark)
