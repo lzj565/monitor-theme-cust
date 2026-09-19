@@ -6,6 +6,7 @@ import { Meter } from "@/components/Meter"
 import { NodeProbeSummary } from "@/components/ProbeHistory"
 import type { Node } from "@/lib/api"
 import { bytes, daysUntil, FOREVER, osName, pair, percent, rate, severity, uptime, type Severity } from "@/lib/format"
+import { loadColor, usageColor } from "@/lib/metricColor"
 import { cn } from "@/lib/utils"
 
 /** Which direction the plan meters, matching the node's traffic_mode. */
@@ -153,20 +154,31 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><Cpu className="size-3.5 text-metric-blue" />CPU {node.cpu_cores} 核</span>}
               pct={m ? m.cpu : null}
-              foot={m ? m.load.map((n) => n.toFixed(2)).join(" ") : "—"}
+              foot={m ? (
+                <span className="inline-flex gap-2">
+                  {m.load.map((n, index) => (
+                    <span key={index} style={{ color: loadColor(n) }} title={`load${index + 1}`}>
+                      {n.toFixed(2)}
+                    </span>
+                  ))}
+                </span>
+              ) : "—"}
               tone="blue"
+              color={m ? usageColor(m.cpu) : undefined}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><MemoryStick className="size-3.5 text-metric-purple" />内存</span>}
               pct={m ? percent(m.mem_used, m.mem_total) : null}
               foot={m ? pair(m.mem_used, m.mem_total) : bytes(node.mem_total)}
               tone="purple"
+              color={m ? usageColor(percent(m.mem_used, m.mem_total)) : undefined}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><HardDrive className="size-3.5 text-metric-orange" />硬盘</span>}
               pct={m ? percent(m.disk_used, m.disk_total) : null}
               foot={m ? pair(m.disk_used, m.disk_total) : bytes(node.disk_total)}
               tone="orange"
+              color={m ? usageColor(percent(m.disk_used, m.disk_total)) : undefined}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><Gauge className="size-3.5 text-metric-green" />流量</span>}

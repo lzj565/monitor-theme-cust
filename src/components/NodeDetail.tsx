@@ -9,13 +9,13 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Country, Status } from "@/components/NodeCard"
-import { ProbeHistory } from "@/components/ProbeHistory"
 import { api, type Node } from "@/lib/api"
 import {
-  axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, rate, timeTicks,
+  axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, percent, rate, timeTicks,
 } from "@/lib/format"
 import { latencyP90 } from "@/lib/latency"
-import { getLatencyColor } from "@/lib/probeHistory"
+import { usageColor, usageGradientStops } from "@/lib/metricColor"
+import { formatPacketLoss, getLatencyColor } from "@/lib/probeHistory"
 
 type Point = {
   ts: number
@@ -95,7 +95,6 @@ const PALETTE = [
 const TABS = [
   { key: "resources", label: "资源" },
   { key: "latency", label: "网络延迟" },
-  { key: "quality", label: "网络质量" },
 ] as const
 
 function Panel({ title, value, icon: Icon, tone, border, children }: {
@@ -138,6 +137,16 @@ function lossTone(loss: number) {
   if (loss > 5) return "text-metric-orange"
   if (loss > 1) return "text-metric-yellow"
   return "text-metric-green"
+}
+
+function UsageGradient({ id, domainPercent }: { id: string; domainPercent: number }) {
+  return (
+    <linearGradient id={id} x1="0" y1="1" x2="0" y2="0">
+      {usageGradientStops(domainPercent).map(({ offset, color }) => (
+        <stop key={offset} offset={offset} stopColor={color} />
+      ))}
+    </linearGradient>
+  )
 }
 
 /**
@@ -183,7 +192,7 @@ export function NodeDetail({ node }: { node: Node }) {
   // Each tab keeps its own range: a 7-day trend and a 1-hour trace answer
   // different questions.
   const [ranges, setRanges] = useState({ resources: 6, latency: 6 })
-  const hours = tab === "quality" ? 1 : ranges[tab]
+  const hours = ranges[tab]
   const [smooth, setSmooth] = useState(false)
   // Probes switched off. Hiding a slow one is what makes the fast ones readable,
   // as the axis rescales to what remains.
@@ -211,7 +220,6 @@ export function NodeDetail({ node }: { node: Node }) {
     setZoom(null)
     // oxlint-disable-next-line react/set-state-in-effect
     setFailed("")
-    if (tab === "quality") return () => { active = false }
     // What this screen can resolve, in device pixels, which is the unit the line
     // is drawn in: a 1280-wide retina panel has 2560 of them for a day of minutes.
     // Read here rather than from a ref, since the hub only thins further, an
@@ -406,7 +414,7 @@ export function NodeDetail({ node }: { node: Node }) {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {tab !== "quality" && <div className="segmented-control">
+          <div className="segmented-control">
             {RANGES_FOR[tab].map((r) => (
               <Tab
                 key={r.hours}
@@ -416,7 +424,7 @@ export function NodeDetail({ node }: { node: Node }) {
                 {r.label}
               </Tab>
             ))}
-          </div>}
+          </div>
           {tab === "latency" && (
             <label className="flex cursor-pointer items-center gap-2 px-2 text-xs text-muted-foreground">
               <input
@@ -432,9 +440,7 @@ export function NodeDetail({ node }: { node: Node }) {
         </div>
       </div>
 
-      {tab === "quality" ? (
-        <ProbeHistory nodeId={node.id} />
-      ) : !data ? (
+      {!data ? (
         <Skeleton className="h-40 w-full" />
       ) : failed ? (
         <p className="py-8 text-center text-sm text-destructive" role="alert">读取历史数据失败：{failed}</p>
@@ -576,13 +582,11 @@ export function NodeDetail({ node }: { node: Node }) {
                     <span className="tabular-nums" style={{ color: getLatencyColor(p90) }}>
                       {p90 === undefined ? "—" : `${Math.round(p90)} ms`}
                     </span>
-                    {/* The line is only what answered, so a probe dropping
-                        half its packets draws like a healthy one. */}
-                    {s.loss > 0 && (
-                      <span className={`tabular-nums ${lossTone(s.loss)}`}>
-                        丢 {s.loss < 1 ? "<1" : Math.round(s.loss)}%
-                      </span>
-                    )}
+                    {/* Keep the authoritative whole-window loss beside the probe
+                        label; it is intentionally not another plotted series. */}
+                    <span className={`tabular-nums ${lossTone(s.loss)}`} title="丢包率">
+                      {formatPacketLoss(s.loss)}%
+                    </span>
                   </button>
                 )
               })}
@@ -596,13 +600,14 @@ export function NodeDetail({ node }: { node: Node }) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Panel
             title="CPU"
-            value={m ? `${m.cpu.toFixed(1)}%` : "—"}
+            value={m ? <span style={{ color: usageColor(m.cpu) }}>{m.cpu.toFixed(1)}%</span> : "—"}
             icon={Cpu}
             tone="text-metric-blue"
             border="border-metric-blue/35"
           >
             <ResponsiveContainer>
               <AreaChart data={metricRows}>
+                <defs><UsageGradient id={`cpu-usage-gradient-${node.id}`} domainPercent={tops.cpu} /></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" vertical={false} />
                 <XAxis {...timeAxis(metricRows)} />
                 <YAxis domain={[0, tops.cpu]} ticks={quarters(tops.cpu)} unit="%" width={Y_WIDTH} {...AXIS} />
@@ -611,7 +616,13 @@ export function NodeDetail({ node }: { node: Node }) {
                   formatter={(v) => [`${Number(v).toFixed(1)}%`, "CPU"]}
                   contentStyle={TOOLTIP_STYLE}
                 />
-                <Area dataKey="cpu" stroke="var(--color-chart-1)" fill="var(--color-chart-1)" fillOpacity={0.18} {...SERIES} />
+                <Area
+                  dataKey="cpu"
+                  stroke={`url(#cpu-usage-gradient-${node.id})`}
+                  fill={`url(#cpu-usage-gradient-${node.id})`}
+                  fillOpacity={0.18}
+                  {...SERIES}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </Panel>
@@ -623,13 +634,18 @@ export function NodeDetail({ node }: { node: Node }) {
               title because the axis top is claiming it. */}
           <Panel
             title="内存"
-            value={m ? `${bytes(m.mem_used)} / ${bytes(m.mem_total)}` : bytes(node.mem_total)}
+            value={m ? (
+              <span style={{ color: usageColor(percent(m.mem_used, m.mem_total)) }}>
+                {bytes(m.mem_used)} / {bytes(m.mem_total)}
+              </span>
+            ) : bytes(node.mem_total)}
             icon={MemoryStick}
             tone="text-metric-purple"
             border="border-metric-purple/35"
           >
             <ResponsiveContainer>
               <AreaChart data={metricRows}>
+                <defs><UsageGradient id={`memory-usage-gradient-${node.id}`} domainPercent={100} /></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" vertical={false} />
                 <XAxis {...timeAxis(metricRows)} />
                 <YAxis domain={[0, node.mem_total]} ticks={quarters(node.mem_total)} tickFormatter={axisBytes} width={Y_WIDTH} {...AXIS} />
@@ -638,7 +654,14 @@ export function NodeDetail({ node }: { node: Node }) {
                   formatter={(v) => bytes(Number(v))}
                   contentStyle={TOOLTIP_STYLE}
                 />
-                <Area dataKey="mem_used" name="内存" stroke="var(--color-chart-2)" fill="var(--color-chart-2)" fillOpacity={0.16} {...SERIES} />
+                <Area
+                  dataKey="mem_used"
+                  name="内存"
+                  stroke={`url(#memory-usage-gradient-${node.id})`}
+                  fill={`url(#memory-usage-gradient-${node.id})`}
+                  fillOpacity={0.16}
+                  {...SERIES}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </Panel>
@@ -673,13 +696,18 @@ export function NodeDetail({ node }: { node: Node }) {
               axis tracks the window's own maximum. */}
           <Panel
             title="硬盘"
-            value={m ? `${bytes(m.disk_used)} / ${bytes(m.disk_total)}` : bytes(node.disk_total)}
+            value={m ? (
+              <span style={{ color: usageColor(percent(m.disk_used, m.disk_total)) }}>
+                {bytes(m.disk_used)} / {bytes(m.disk_total)}
+              </span>
+            ) : bytes(node.disk_total)}
             icon={HardDrive}
             tone="text-metric-orange"
             border="border-metric-orange/35"
           >
             <ResponsiveContainer>
               <AreaChart data={metricRows}>
+                <defs><UsageGradient id={`disk-usage-gradient-${node.id}`} domainPercent={100} /></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" vertical={false} />
                 <XAxis {...timeAxis(metricRows)} />
                 <YAxis domain={[0, node.disk_total]} ticks={quarters(node.disk_total)} tickFormatter={axisBytes} width={Y_WIDTH} {...AXIS} />
@@ -688,7 +716,14 @@ export function NodeDetail({ node }: { node: Node }) {
                   formatter={(v) => bytes(Number(v))}
                   contentStyle={TOOLTIP_STYLE}
                 />
-                <Area dataKey="disk_used" name="硬盘" stroke="var(--color-metric-orange)" fill="var(--color-metric-orange)" fillOpacity={0.14} {...SERIES} />
+                <Area
+                  dataKey="disk_used"
+                  name="硬盘"
+                  stroke={`url(#disk-usage-gradient-${node.id})`}
+                  fill={`url(#disk-usage-gradient-${node.id})`}
+                  fillOpacity={0.14}
+                  {...SERIES}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </Panel>

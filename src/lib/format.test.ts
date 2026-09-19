@@ -4,6 +4,7 @@
 //
 // Nothing imports it, so the bundle never includes it.
 import { axisBytes, axisTop, bytes, cpuName, daysUntil, osName, pair, quarters, severity, timeTicks, uptime } from "./format.ts"
+import { loadColor, usageColor, usageGradientStops } from "./metricColor.ts"
 
 let failed = 0
 function eq(got: unknown, want: unknown, what: string) {
@@ -107,6 +108,19 @@ eq(uptime(2 * 86400 + 5 * 3600), "2 天 5 小时", "超过一天不再写分钟"
 
 eq(osName("Debian GNU/Linux 12 (bookworm)"), "Debian 12", "发行版名去掉代号")
 eq(cpuName("Intel(R) Xeon(R) CPU E5-2680 8-Core Processor"), "Intel Xeon E5-2680", "CPU 名去掉商标和核数")
+
+// Resource colours: exact anchors, clamped bounds, and a real smooth midpoint.
+eq(usageColor(0), "rgb(85 255 99)", "占用色 0%")
+eq(usageColor(10), "rgb(78 255 65)", "占用色 10%")
+eq(usageColor(100), "rgb(255 0 0)", "占用色 100%")
+eq(usageColor(-1), usageColor(0), "占用色低于 0% 截断")
+eq(usageColor(101), usageColor(100), "占用色高于 100% 截断")
+eq(/^rgb\(\d+ \d+ \d+\)$/.test(usageColor(5)), true, "占用色使用可渲染的中间值")
+eq(usageColor(5) !== usageColor(0) && usageColor(5) !== usageColor(10), true, "占用色不是阶梯切换")
+eq(loadColor(0), "rgb(85 255 99)", "负载色 0")
+eq(loadColor(2), "rgb(255 0 0)", "负载色 2")
+eq(loadColor(3), loadColor(2), "负载色超过 2 截断")
+eq(usageGradientStops(20).map((stop) => stop.offset), ["0%", "50%", "100%"], "低上限图表渐变覆盖实际轴")
 
 if (failed) {
   console.error(`\n${failed} 项不通过`)
