@@ -137,35 +137,35 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
   return (
     <Card
       onClick={onOpen}
-      // The system line below intentionally stays on one untruncated row. It may
-      // paint into the expiry column on narrow cards, while flex-1/min-w-0 keeps
-      // the card itself inside its grid track.
       className="min-w-0 cursor-pointer gap-0 p-4 hover:-translate-y-0.5 hover:border-metric-blue/35 hover:bg-panel-hover"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
     >
-      <div className="relative flex items-start justify-between gap-3 overflow-visible">
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
+      {/* Keep live status and expiry in separate rows so neither can drift into
+          the other row when the card becomes narrow. */}
+      <div className="relative flex flex-col gap-1 overflow-visible">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {country && (
               <span className="shrink-0 text-2xl leading-none" aria-hidden="true">
                 {countryCodeToFlag(country)}
               </span>
             )}
             <h3 className="min-w-0 flex-1 truncate font-medium">{node.name}</h3>
-            <Status node={node} />
           </div>
+          <Status node={node} />
+        </div>
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <p
-            className="relative z-10 mt-1 w-max max-w-none whitespace-nowrap overflow-visible text-xs text-muted-foreground"
+            className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground"
             title={systemInfo(node)}
           >
             {systemInfo(node)}
           </p>
-        </div>
-        {/* Keep expiry at the right while the live state stays beside the identity. */}
-        <div className="relative z-0 flex shrink-0 flex-col items-end gap-1">
-          <Expiry node={node} />
+          <div className="shrink-0 text-right">
+            <Expiry node={node} />
+          </div>
         </div>
       </div>
 
