@@ -78,6 +78,14 @@ function trafficFoot(node: Node) {
     : `${bytes(monthUsage(node))} / ${FOREVER}`
 }
 
+function systemInfo(node: Node): string {
+  return [
+    node.os ? osName(node.os) : "等待首次上报",
+    node.virt && node.virt !== "none" ? node.virt : "",
+    node.arch,
+  ].filter(Boolean).join(" · ")
+}
+
 // No date means nothing expires: a permanent host, or one with no renewal set. A
 // blank corner asserts neither.
 function Expiry({ node }: { node: Node }) {
@@ -126,29 +134,29 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
   return (
     <Card
       onClick={onOpen}
-      // min-w-0: a grid item sizes to its content unless told otherwise, and the
-      // OS line below does not wrap, so on a phone the card would grow past its
-      // column and scroll the page sideways. The truncate inside only takes effect
-      // once the card is allowed to be narrower.
+      // The system line below intentionally stays on one untruncated row. It may
+      // paint into the expiry column on narrow cards, while flex-1/min-w-0 keeps
+      // the card itself inside its grid track.
       className="min-w-0 cursor-pointer gap-0 p-4 hover:-translate-y-0.5 hover:border-metric-blue/35 hover:bg-panel-hover"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="relative flex items-start justify-between gap-3 overflow-visible">
+        <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <h3 className="truncate font-medium">{node.name}</h3>
             <Country node={node} />
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">
-            {node.os ? osName(node.os) : "等待首次上报"}
-            {node.virt && node.virt !== "none" ? ` · ${node.virt}` : ""}
-            {node.arch ? ` · ${node.arch}` : ""}
+          <p
+            className="relative z-10 mt-1 w-max max-w-none whitespace-nowrap overflow-visible text-xs text-muted-foreground"
+            title={systemInfo(node)}
+          >
+            {systemInfo(node)}
           </p>
         </div>
         {/* State right, identity left, one line each. */}
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="relative z-0 flex shrink-0 flex-col items-end gap-1">
           <Status node={node} />
           <Expiry node={node} />
         </div>
