@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Meter } from "@/components/Meter"
 import { NodeProbeSummary } from "@/components/ProbeHistory"
+import { SegmentedProgress } from "@/components/SegmentedProgress"
 import type { Node } from "@/lib/api"
 import {
   bytes, daysUntil, FOREVER, osName, pair, percent, rate, rateSeverity, severity, uptime,
@@ -187,6 +188,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
                   ))}
                 </span>
               ) : "—"}
+              progress={<SegmentedProgress value={m?.cpu ?? 0} segments={16} className="mt-1.5" />}
               tone="blue"
               color={m ? usageColor(m.cpu) : undefined}
             />

@@ -5,6 +5,7 @@ type Props = {
   label: ReactNode
   pct: number | null
   foot: ReactNode
+  progress?: ReactNode
   empty?: ReactNode
   tone?: Tone
   color?: string
@@ -22,7 +23,7 @@ const tones: Record<Tone, string> = {
  * One metric: name and percentage on top, bar in the middle, raw numbers
  * underneath. Monochrome, since the length of the bar carries the message.
  */
-export function Meter({ label, pct, foot, empty = "—", tone = "blue", color }: Props) {
+export function Meter({ label, pct, foot, progress, empty = "—", tone = "blue", color }: Props) {
   // null means the metric has no ceiling to fill, so the bar stays empty rather
   // than reporting 0%. What replaces the percentage depends on the reason:
   // unknown for a node with no metrics, ∞ for a plan with no limit.
@@ -36,12 +37,14 @@ export function Meter({ label, pct, foot, empty = "—", tone = "blue", color }:
           {pct === null ? empty : `${filled < 10 ? filled.toFixed(1) : filled.toFixed(0)}%`}
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
-        <div
-          className={`h-full rounded-full ${color ? "metric-resource-fill" : tones[tone]} transition-[width] duration-500`}
-          style={{ ...resourceStyle, width: `${filled}%` }}
-        />
-      </div>
+      {progress ?? (
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
+          <div
+            className={`h-full rounded-full ${color ? "metric-resource-fill" : tones[tone]} transition-[width] duration-500`}
+            style={{ ...resourceStyle, width: `${filled}%` }}
+          />
+        </div>
+      )}
       <div className="tnum mt-1.5 truncate text-xs text-muted-foreground">{foot}</div>
     </div>
   )
