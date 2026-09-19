@@ -125,6 +125,7 @@ eq(usageColor(5) !== usageColor(0) && usageColor(5) !== usageColor(10), true, "�
 eq(loadColor(0), "rgb(85 255 99)", "负载色 0")
 eq(loadColor(2), "rgb(255 0 0)", "负载色 2")
 eq(loadColor(3), loadColor(2), "负载色超过 2 截断")
+eq(new Set([0.1, 0.28, 0.46].map(loadColor)).size, 3, "低负载颜色保持连续区分")
 eq(usageGradientStops(20).map((stop) => stop.offset), ["0%", "50%", "100%"], "低上限图表渐变覆盖实际轴")
 
 if (failed) {

@@ -170,7 +170,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
                   {m.load.map((n, index) => (
                     <span
                       key={index}
-                      className="metric-resource-color"
+                      className="metric-load-color"
                       style={{ "--resource-color": loadColor(n) } as CSSProperties}
                       title={`load${index + 1}`}
                     >

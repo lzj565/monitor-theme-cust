@@ -206,22 +206,30 @@
 .tnum { font-variant-numeric: tabular-nums; }
 
 @layer components {
-  /* Resource colours stay vivid on the dark glass. On the light surface the
-     same low-usage greens are too pale for text and narrow bars, so blend them
-     towards the theme foreground while retaining their hue and severity order. */
+  /* Resource colours stay vivid on the dark glass. On the light surface text
+     needs more foreground mixed in for contrast, while bars and chart stops
+     need more of the resource colour to avoid looking muddy. */
   .metric-resource-color {
     color: color-mix(in oklch, var(--resource-color) 45%, var(--foreground) 55%);
   }
 
+  .metric-load-color {
+    color: color-mix(in oklch, var(--resource-color) 60%, var(--foreground) 40%);
+  }
+
   .metric-resource-fill {
-    background-color: color-mix(in oklch, var(--resource-color) 45%, var(--foreground) 55%);
+    background-color: color-mix(in oklch, var(--resource-color) 70%, var(--foreground) 30%);
   }
 
   .metric-resource-stop {
-    stop-color: color-mix(in oklch, var(--resource-color) 45%, var(--foreground) 55%);
+    stop-color: color-mix(in oklch, var(--resource-color) 70%, var(--foreground) 30%);
   }
 
   .dark .metric-resource-color {
+    color: var(--resource-color);
+  }
+
+  .dark .metric-load-color {
     color: var(--resource-color);
   }
 
