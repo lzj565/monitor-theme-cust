@@ -8,8 +8,9 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Country, Status } from "@/components/NodeCard"
+import { CountryBadge, Status } from "@/components/NodeCard"
 import { api, type Node } from "@/lib/api"
+import { getEffectiveCountry } from "@/lib/country"
 import {
   axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, percent, rate, rateSeverity, timeTicks,
   type RateSeverity,
@@ -257,6 +258,7 @@ export function NodeDetail({ node }: { node: Node }) {
   }, [node.id, hours, tab])
 
   const m = node.metrics
+  const country = getEffectiveCountry(node)
   // One series per probe that reported, ordered by the stable numeric IDs from
   // the hub's probes map rather than by whichever ping sample arrived first.
   // Memoised, as are the two below: the node prop changes every few seconds as
@@ -376,7 +378,7 @@ export function NodeDetail({ node }: { node: Node }) {
       <div className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
         <h2 className="truncate text-lg font-medium">{node.name}</h2>
-        <Country node={node} />
+        <CountryBadge country={country} />
         <Status node={node} />
         {node.agent_version && (
           <Badge variant="outline" className="font-normal">

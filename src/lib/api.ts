@@ -27,8 +27,10 @@ export type Node = {
   sort: number
   public: boolean
   online: boolean
-  /** ISO 3166-1 alpha-2, or empty when the hub could not locate the address. */
-  country: string
+  /** ISO 3166-1 alpha-2 values; all may be absent in older API responses. */
+  country?: string | null
+  country_auto?: string | null
+  country_pin?: string | null
   last_seen: number
   metrics: Metrics | null
   os: string

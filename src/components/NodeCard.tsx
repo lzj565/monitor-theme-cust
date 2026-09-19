@@ -7,6 +7,7 @@ import { Meter } from "@/components/Meter"
 import { NodeProbeSummary } from "@/components/ProbeHistory"
 import { SegmentedProgress } from "@/components/SegmentedProgress"
 import type { Node } from "@/lib/api"
+import { countryFlag, countryName, getEffectiveCountry } from "@/lib/country"
 import {
   bytes, daysUntil, FOREVER, osName, pair, percent, rate, rateSeverity, severity, uptime,
   type RateSeverity, type Severity,
@@ -61,12 +62,13 @@ export function Status({ node }: { node: Node }) {
   )
 }
 
-/** Where the machine is, in the same shape as the badge next to it. */
-export function Country({ node }: { node: Node }) {
-  if (!node.country) return null
+export function CountryBadge({ country }: { country: string | null }) {
+  if (!country) return null
+  const name = countryName(country)
   return (
-    <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground">
-      {node.country}
+    <Badge variant="outline" className="shrink-0 gap-1 font-normal text-muted-foreground" aria-label={name}>
+      <span aria-hidden="true">{countryFlag(country)}</span>
+      <span>{name}</span>
     </Badge>
   )
 }
@@ -131,6 +133,7 @@ function RuntimeStat({ icon: Icon, label, value, tone, valueTone }: {
 
 export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
   const m = node.metrics
+  const country = getEffectiveCountry(node)
 
   return (
     <Card
@@ -147,7 +150,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <h3 className="truncate font-medium">{node.name}</h3>
-            <Country node={node} />
+            <CountryBadge country={country} />
           </div>
           <p
             className="relative z-10 mt-1 w-max max-w-none whitespace-nowrap overflow-visible text-xs text-muted-foreground"
