@@ -6,7 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Meter } from "@/components/Meter"
 import { NodeProbeSummary } from "@/components/ProbeHistory"
 import type { Node } from "@/lib/api"
-import { bytes, daysUntil, FOREVER, osName, pair, percent, rate, severity, uptime, type Severity } from "@/lib/format"
+import {
+  bytes, daysUntil, FOREVER, osName, pair, percent, rate, rateSeverity, severity, uptime,
+  type RateSeverity, type Severity,
+} from "@/lib/format"
 import { loadColor, usageColor } from "@/lib/metricColor"
 import { cn } from "@/lib/utils"
 
@@ -91,6 +94,13 @@ function Expiry({ node }: { node: Node }) {
 const severityTone: Record<Severity, string> = {
   green: "text-metric-green",
   yellow: "text-metric-yellow",
+  red: "text-destructive",
+}
+
+const rateTone: Record<RateSeverity, string> = {
+  green: "text-metric-green",
+  yellow: "text-metric-yellow",
+  orange: "text-metric-orange",
   red: "text-destructive",
 }
 
@@ -195,23 +205,16 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4">
-            <Meter
-              label={<span className="inline-flex items-center gap-1.5"><MemoryStick className="size-3.5 text-metric-yellow" />Swap</span>}
-              pct={m && m.swap_total > 0 ? percent(m.swap_used, m.swap_total) : null}
-              foot={m
-                ? m.swap_total > 0 ? pair(m.swap_used, m.swap_total) : "未启用"
-                : node.swap_total > 0 ? `— / ${bytes(node.swap_total)}` : "未启用"}
-              tone="yellow"
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
+            <RuntimeStat
+              icon={MemoryStick}
+              label="Swap"
+              value={m
+                ? m.swap_total > 0 ? bytes(m.swap_total) : "未启用"
+                : node.swap_total > 0 ? bytes(node.swap_total) : "未启用"}
+              tone="text-metric-yellow"
+              valueTone={m ? "text-foreground" : "text-muted-foreground"}
             />
-            <div className="flex min-w-0 flex-col justify-between gap-2">
-              <RuntimeStat
-                icon={Activity}
-                label="进程数"
-                value={m?.procs ?? "—"}
-                tone="text-metric-yellow"
-                valueTone={m ? severityTone[severity(m.procs, 100, 200)] : "text-muted-foreground"}
-              />
             <RuntimeStat
               icon={Network}
               label="TCP"
@@ -220,27 +223,33 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               valueTone={m ? severityTone[severity(m.tcp, 100, 200)] : "text-muted-foreground"}
             />
             <RuntimeStat
+              icon={Activity}
+              label="进程数"
+              value={m?.procs ?? "—"}
+              tone="text-metric-yellow"
+              valueTone={m ? severityTone[severity(m.procs, 100, 200)] : "text-muted-foreground"}
+            />
+            <RuntimeStat
               icon={Network}
               label="UDP"
               value={m?.udp ?? "—"}
               tone="text-metric-blue"
               valueTone={m ? severityTone[severity(m.udp, 100, 200)] : "text-muted-foreground"}
             />
-            </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-4 text-xs">
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowDown className="size-3 text-metric-green" />
               <span className="text-muted-foreground">下行</span>
-              <span className={cn("truncate", m ? severityTone[severity(m.net_rx, 1024 ** 2, 10 * 1024 ** 2)] : "text-muted-foreground")}>
+              <span className={cn("truncate", m ? rateTone[rateSeverity(m.net_rx)] : "text-muted-foreground")}>
                 {m ? rate(m.net_rx) : "—"}
               </span>
             </span>
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowUp className="size-3 text-metric-blue" />
               <span className="text-muted-foreground">上行</span>
-              <span className={cn("truncate", m ? severityTone[severity(m.net_tx, 1024 ** 2, 10 * 1024 ** 2)] : "text-muted-foreground")}>
+              <span className={cn("truncate", m ? rateTone[rateSeverity(m.net_tx)] : "text-muted-foreground")}>
                 {m ? rate(m.net_tx) : "—"}
               </span>
             </span>

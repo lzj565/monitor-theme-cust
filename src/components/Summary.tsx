@@ -2,12 +2,13 @@ import { Activity, ArrowDown, ArrowDownUp, ArrowUp, Gauge, Inbox, Send, Server }
 
 import { Card } from "@/components/ui/card"
 import { speedHistory, type Node } from "@/lib/api"
-import { bytes, rate, severity, type Severity } from "@/lib/format"
+import { bytes, rate, rateSeverity, type RateSeverity } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-const severityTone: Record<Severity, string> = {
+const rateTone: Record<RateSeverity, string> = {
   green: "text-metric-green",
   yellow: "text-metric-yellow",
+  orange: "text-metric-orange",
   red: "text-destructive",
 }
 
@@ -129,8 +130,8 @@ export function Summary({ nodes }: { nodes: Node[] }) {
         <Flow
           down={rate(now.rx)}
           up={rate(now.tx)}
-          downTone={severityTone[severity(now.rx, 1024 ** 2, 10 * 1024 ** 2)]}
-          upTone={severityTone[severity(now.tx, 1024 ** 2, 10 * 1024 ** 2)]}
+          downTone={rateTone[rateSeverity(now.rx)]}
+          upTone={rateTone[rateSeverity(now.tx)]}
           className="mt-1 text-sm font-semibold"
         />
         <div className="mt-auto pt-1">

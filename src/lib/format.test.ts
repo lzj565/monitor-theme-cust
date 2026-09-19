@@ -3,7 +3,7 @@
 // requires no runner, framework or dependency.
 //
 // Nothing imports it, so the bundle never includes it.
-import { axisBytes, axisTop, bytes, cpuName, daysUntil, osName, pair, quarters, severity, timeTicks, uptime } from "./format.ts"
+import { axisBytes, axisTop, bytes, cpuName, daysUntil, osName, pair, quarters, rateSeverity, severity, timeTicks, uptime } from "./format.ts"
 import { loadColor, usageColor, usageGradientStops } from "./metricColor.ts"
 
 let failed = 0
@@ -35,6 +35,11 @@ eq([99, 100, 199, 200].map((n) => severity(n, 100, 200)),
    ["green", "yellow", "yellow", "red"], "进程数颜色边界")
 eq([1024 ** 2 - 1, 1024 ** 2, 10 * 1024 ** 2 - 1, 10 * 1024 ** 2].map((n) => severity(n, 1024 ** 2, 10 * 1024 ** 2)),
    ["green", "yellow", "yellow", "red"], "网速颜色边界")
+eq(
+  [0, 1023, 1024, 1024 ** 2 - 1, 1024 ** 2, 10 * 1024 ** 2 - 1, 10 * 1024 ** 2].map(rateSeverity),
+  ["green", "green", "yellow", "yellow", "orange", "orange", "red"],
+  "上传下载四档颜色边界",
+)
 
 // axisBytes: ticks under three digits keep one decimal, or a narrow axis repeats
 // a label; a trailing .0 adds nothing.

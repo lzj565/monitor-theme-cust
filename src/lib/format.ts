@@ -57,10 +57,20 @@ export function percent(used: number, total: number): number {
 
 export type Severity = "green" | "yellow" | "red"
 
+export type RateSeverity = "green" | "yellow" | "orange" | "red"
+
 /** Three fixed bands for live figures that have no meaningful capacity. */
 export function severity(value: number, warnAt: number, dangerAt: number): Severity {
   if (value >= dangerAt) return "red"
   if (value >= warnAt) return "yellow"
+  return "green"
+}
+
+/** Four rate bands shared by live upload/download values. */
+export function rateSeverity(value: number): RateSeverity {
+  if (value >= 10 * 1024 ** 2) return "red"
+  if (value >= 1024 ** 2) return "orange"
+  if (value >= 1024) return "yellow"
   return "green"
 }
 

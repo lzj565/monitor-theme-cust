@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Country, Status } from "@/components/NodeCard"
 import { api, type Node } from "@/lib/api"
 import {
-  axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, percent, rate, timeTicks,
+  axisBytes, axisTop, bytes, clockFor, quarters, cpuName, CYCLES, FOREVER, money, osName, percent, rate, rateSeverity, timeTicks,
+  type RateSeverity,
 } from "@/lib/format"
 import { latencyP90 } from "@/lib/latency"
 import { usageColor, usageGradientStops } from "@/lib/metricColor"
@@ -91,6 +92,13 @@ const PALETTE = [
   "#45c98b",
   "#e8b33d",
 ]
+
+const rateTone: Record<RateSeverity, string> = {
+  green: "text-metric-green",
+  yellow: "text-metric-yellow",
+  orange: "text-metric-orange",
+  red: "text-destructive",
+}
 
 const TABS = [
   { key: "resources", label: "资源" },
@@ -682,7 +690,7 @@ export function NodeDetail({ node }: { node: Node }) {
               ladder like CPU rather than pinning to a capacity. */}
           <Panel
             title="网络速率"
-            value={m ? <span><span className="text-metric-green">↓ {rate(m.net_rx)}</span> · <span className="text-metric-blue">↑ {rate(m.net_tx)}</span></span> : "—"}
+            value={m ? <span><span className="text-metric-green">↓ <span className={rateTone[rateSeverity(m.net_rx)]}>{rate(m.net_rx)}</span></span> · <span className="text-metric-blue">↑ <span className={rateTone[rateSeverity(m.net_tx)]}>{rate(m.net_tx)}</span></span></span> : "—"}
             icon={Network}
             tone="text-metric-green"
             border="border-metric-green/35"
