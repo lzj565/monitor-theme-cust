@@ -13,6 +13,9 @@ const CURRENT_TIME = new Intl.DateTimeFormat("zh-CN", {
   hour12: false,
 })
 
+const MOBILE_QUERY = "(max-width: 639px)"
+const MOBILE_DISMISS_DELAY = 10000
+
 const DETAIL_TONES = {
   cyan: "bg-metric-cyan/12 text-metric-cyan",
   pink: "bg-metric-pink/12 text-metric-pink",
@@ -50,9 +53,13 @@ function Detail({ icon: Icon, label, value, tone }: {
   )
 }
 
-export function VisitorCard({ info }: { info: VisitorInfo }) {
+export function VisitorCard({ info, onClose }: { info: VisitorInfo; onClose: () => void }) {
   const card = useRef<HTMLElement | null>(null)
+  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const remaining = useRef(MOBILE_DISMISS_DELAY)
+  const started = useRef(0)
   const [expanded, setExpanded] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => matchMedia(MOBILE_QUERY).matches)
   const [currentTime, setCurrentTime] = useState(() => CURRENT_TIME.format(new Date()))
 
   useEffect(() => {
@@ -60,6 +67,26 @@ export function VisitorCard({ info }: { info: VisitorInfo }) {
     const interval = setInterval(update, 1000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    const media = matchMedia(MOBILE_QUERY)
+    const update = () => setIsMobile(media.matches)
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobile || expanded || remaining.current <= 0) return
+
+    started.current = Date.now()
+    timeout.current = setTimeout(onClose, remaining.current)
+    return () => {
+      if (!timeout.current) return
+      clearTimeout(timeout.current)
+      timeout.current = null
+      remaining.current = Math.max(0, remaining.current - (Date.now() - started.current))
+    }
+  }, [expanded, isMobile, onClose])
 
   useEffect(() => {
     if (!expanded) return
@@ -91,37 +118,48 @@ export function VisitorCard({ info }: { info: VisitorInfo }) {
       )}
     >
       {!expanded ? (
-        <button
-          type="button"
-          aria-expanded="false"
-          aria-label="展开访客信息"
-          onClick={() => setExpanded(true)}
-          className="visitor-card-surface visitor-card-compact flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl px-3.5 py-2 text-left text-xs text-card-foreground sm:w-fit sm:max-w-[26.25rem]"
-        >
-          {shortLocation && (
-            <span className="flex w-full min-w-0 items-center gap-1.5 font-medium sm:w-auto">
-              {flag && <span aria-hidden="true" className="text-base leading-none">{flag}</span>}
-              <span className="truncate">{shortLocation}</span>
-            </span>
-          )}
-          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-            <Globe2 className="size-3.5 text-metric-cyan" />
-            <span className="tnum">{maskVisitorIp(info.ip)}</span>
-          </span>
-          {info.browser && (
+        <div className="visitor-card-surface visitor-card-compact flex w-full items-stretch rounded-2xl text-xs text-card-foreground sm:w-fit sm:max-w-[26.25rem]">
+          <button
+            type="button"
+            aria-expanded="false"
+            aria-label="展开访客信息"
+            onClick={() => setExpanded(true)}
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl px-3.5 py-2 text-left"
+          >
+            {shortLocation && (
+              <span className="flex w-full min-w-0 items-center gap-1.5 font-medium sm:w-auto">
+                {flag && <span aria-hidden="true" className="text-base leading-none">{flag}</span>}
+                <span className="truncate">{shortLocation}</span>
+              </span>
+            )}
             <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-              <Monitor className="size-3.5 text-metric-blue" />
-              <span>{info.browser.replace(/\s+\d+(?:\.\d+)*$/, "")}</span>
+              <Globe2 className="size-3.5 text-metric-cyan" />
+              <span className="tnum">{maskVisitorIp(info.ip)}</span>
             </span>
-          )}
-        </button>
+            {info.browser && (
+              <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                <Monitor className="size-3.5 text-metric-blue" />
+                <span>{info.browser.replace(/\s+\d+(?:\.\d+)*$/, "")}</span>
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            aria-label="关闭访客信息"
+            title="关闭"
+            onClick={onClose}
+            className="grid w-10 shrink-0 place-items-center rounded-r-2xl text-muted-foreground transition-colors hover:bg-metric-pink/12 hover:text-metric-pink sm:hidden"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
       ) : (
         <Card className="visitor-card-surface visitor-card-expanded relative gap-3 p-5 sm:p-6">
           <button
             type="button"
-            aria-label="收起访客信息"
-            title="收起"
-            onClick={() => setExpanded(false)}
+            aria-label={isMobile ? "关闭访客信息" : "收起访客信息"}
+            title={isMobile ? "关闭" : "收起"}
+            onClick={() => isMobile ? onClose() : setExpanded(false)}
             className="absolute right-2.5 top-2.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-metric-pink/12 hover:text-metric-pink"
           >
             <X className="size-4" />
