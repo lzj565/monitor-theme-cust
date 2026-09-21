@@ -77,7 +77,7 @@ function HistoryBlocks({
 
   return (
     <div
-      className={cn("grid w-full gap-px", compact ? "h-[5px]" : "h-2.5")}
+      className={cn("grid w-full", compact ? "h-1.5 gap-0.5" : "h-2.5 gap-px")}
       style={{ gridTemplateColumns: `repeat(${history.length}, minmax(1px, 1fr))` }}
     >
         {history.map((slot, index) => {
@@ -90,7 +90,7 @@ function HistoryBlocks({
               key={slot.startAt}
               aria-label={text}
               className={cn(
-                compact ? "h-[5px] min-w-0 rounded-full" : "h-2.5 min-w-0 rounded-[2px]",
+                compact ? "h-1.5 min-w-0 rounded-[2px]" : "h-2.5 min-w-0 rounded-[2px]",
                 animateNewest && index === history.length - 1 && "probe-new-block",
               )}
               style={{ backgroundColor: color }}
