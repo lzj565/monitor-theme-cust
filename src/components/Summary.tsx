@@ -17,7 +17,7 @@ function Tile({ icon: Icon, label, children, tone }: {
   icon: typeof Server; label: string; children: React.ReactNode; tone: string
 }) {
   return (
-    <Card className="gap-0 p-3">
+    <Card className="min-h-[7.5rem] gap-0 p-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Icon className={`size-3.5 ${tone}`} />
         {label}
@@ -91,7 +91,7 @@ export function Summary({ nodes }: { nodes: Node[] }) {
   const now = speedHistory.at(-1) ?? { rx: 0, tx: 0 }
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
       <Tile icon={Server} label="节点状态" tone="text-metric-cyan">
         <div className="tnum mt-1.5 text-xl font-semibold">
           {summary.online} / {nodes.length}
@@ -113,13 +113,14 @@ export function Summary({ nodes }: { nodes: Node[] }) {
         </div>
       </Tile>
 
-      <Card className="gap-0 p-3">
-        <div className="tnum grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 sm:gap-y-0">
-          <div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ArrowDownUp className="size-3.5 text-metric-green" />
-              今日流量
-            </div>
+      <Card className="min-h-[7.5rem] gap-0 p-3">
+        <div className="tnum grid grid-cols-2 gap-x-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <ArrowDownUp className="size-3.5 shrink-0 text-metric-green" />
+            今日流量
+          </div>
+          <div className="text-xs text-muted-foreground">总流量</div>
+          <div className="min-w-0">
             <Flow
               down={bytes(sum((n) => n.day_rx))}
               up={bytes(sum((n) => n.day_tx))}
@@ -128,8 +129,7 @@ export function Summary({ nodes }: { nodes: Node[] }) {
               stacked
             />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground">总流量</div>
+          <div className="min-w-0">
             <Flow
               down={bytes(sum((n) => n.total_rx))}
               up={bytes(sum((n) => n.total_tx))}

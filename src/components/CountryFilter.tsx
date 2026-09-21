@@ -1,7 +1,5 @@
-import { ArrowDown, Check, Settings2 } from "lucide-react"
-import { DropdownMenu } from "radix-ui"
+import { ArrowDown } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { countryCodeToFlag, type CountryStat } from "@/lib/country"
 import type { NodeSortMode } from "@/lib/dashboard"
 import { cn } from "@/lib/utils"
@@ -37,44 +35,14 @@ export function CountryFilter({ stats, selectedCountry, onChange, sortMode, onSo
           )
         })}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <button
-          type="button"
-          className={cn("sort-status", sortMode === "download" && "is-active")}
-          title={sortMode === "download" ? "恢复默认排序" : undefined}
-          onClick={() => sortMode === "download" && onSortChange("default")}
-        >
-          {sortMode === "download" ? <>下载速度 <ArrowDown /></> : "默认排序"}
-        </button>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <Button variant="ghost" size="icon-sm" title="视图选项" aria-label="视图选项">
-              <Settings2 />
-            </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content className="sort-menu" align="end" sideOffset={6}>
-              <DropdownMenu.Label className="sort-menu-label">排序方式</DropdownMenu.Label>
-              <SortItem active={sortMode === "default"} onSelect={() => onSortChange("default")}>默认排序</SortItem>
-              <SortItem active={sortMode === "download"} onSelect={() => onSortChange("download")}>下载速度</SortItem>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-      </div>
+      <button
+        type="button"
+        className={cn("sort-status shrink-0", sortMode === "download" && "is-active")}
+        aria-label={sortMode === "download" ? "当前按下载速度从高到低排序，点击恢复默认排序" : "当前为默认排序，点击按下载速度从高到低排序"}
+        onClick={() => onSortChange(sortMode === "default" ? "download" : "default")}
+      >
+        {sortMode === "download" ? <>下载速度 <ArrowDown /></> : "默认排序"}
+      </button>
     </div>
-  )
-}
-
-function SortItem({ active, onSelect, children }: {
-  active: boolean
-  onSelect: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <DropdownMenu.Item className="sort-menu-item" onSelect={onSelect}>
-      <span className="size-4">{active && <Check className="size-4" />}</span>
-      {children}
-      {children === "下载速度" && <ArrowDown className="ml-auto size-3.5 text-muted-foreground" />}
-    </DropdownMenu.Item>
   )
 }
