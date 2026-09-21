@@ -93,13 +93,15 @@ export function getLatencyColor(ms: number | null | undefined): string {
   return "var(--probe-red)"
 }
 
-/** Homepage cards use fewer, clearer severity bands than the detail chart. */
+/** Homepage cards use thresholds suited to mixed Asia, US, and Europe nodes. */
 export function getCardLatencyColor(ms: number | null | undefined): string {
   if (ms === undefined) return "var(--probe-empty)"
   if (ms === null) return "var(--probe-timeout)"
   if (ms < 50) return "var(--probe-green)"
-  if (ms < 100) return "var(--probe-yellow)"
-  if (ms <= 200) return "var(--probe-amber)"
+  if (ms < 100) return "var(--probe-lime)"
+  if (ms < 150) return "var(--probe-yellow)"
+  if (ms < 220) return "var(--probe-amber)"
+  if (ms < 300) return "var(--probe-orange)"
   return "var(--probe-red)"
 }
 

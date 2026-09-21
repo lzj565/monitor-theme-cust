@@ -45,10 +45,11 @@ eq(
 )
 
 eq(
-  [undefined, null, 49, 50, 99, 100, 200, 201].map(getCardLatencyColor),
+  [undefined, null, 49, 50, 99, 100, 149, 150, 219, 220, 299, 300].map(getCardLatencyColor),
   [
-    "var(--probe-empty)", "var(--probe-timeout)", "var(--probe-green)", "var(--probe-yellow)",
-    "var(--probe-yellow)", "var(--probe-amber)", "var(--probe-amber)", "var(--probe-red)",
+    "var(--probe-empty)", "var(--probe-timeout)", "var(--probe-green)", "var(--probe-lime)",
+    "var(--probe-lime)", "var(--probe-yellow)", "var(--probe-yellow)", "var(--probe-amber)",
+    "var(--probe-amber)", "var(--probe-orange)", "var(--probe-orange)", "var(--probe-red)",
   ],
   "首页卡片延迟颜色边界",
 )
