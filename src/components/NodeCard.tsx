@@ -44,19 +44,26 @@ function deployed(node: Node) {
  */
 export function Status({ node }: { node: Node }) {
   const down = node.last_seen ? Date.now() / 1000 - node.last_seen : 0
+  const offline = !node.online && deployed(node)
   const label = node.online
     ? `在线 ${node.metrics ? uptime(node.metrics.uptime) : ""}`
     : deployed(node)
       ? `离线 ${down >= 60 ? uptime(down) : ""}`
       : "未接入"
   return (
-    // Muted once it stops reporting: the figures on the page are genuine, merely
-    // no longer current.
+    // A previously connected node is an actionable outage; a node that has not
+    // enrolled yet remains a neutral setup state.
     <Badge
       variant="outline"
-      className={cn("tnum shrink-0 gap-1.5 font-normal", !node.online && "text-muted-foreground")}
+      className={cn(
+        "tnum shrink-0 gap-1.5 font-normal",
+        offline ? "border-destructive/35 bg-destructive/8 text-destructive" : !node.online && "text-muted-foreground",
+      )}
     >
-      <span className={cn("size-1.5 rounded-full", node.online ? "bg-metric-green" : "bg-muted-foreground/40")} />
+      <span className={cn(
+        "size-1.5 rounded-full",
+        node.online ? "bg-metric-green" : offline ? "bg-destructive" : "bg-muted-foreground/40",
+      )} />
       {label.trim()}
     </Badge>
   )
@@ -131,13 +138,18 @@ function RuntimeStat({ icon: Icon, label, value, tone, valueTone }: {
 }
 
 export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
-  const m = node.metrics
+  const offline = !node.online && deployed(node)
+  const m = node.online ? node.metrics : null
   const country = getEffectiveCountry(node)
+  const displayedSystemInfo = offline ? "—" : systemInfo(node)
 
   return (
     <Card
       onClick={onOpen}
-      className="min-w-0 cursor-pointer gap-0 p-4 hover:-translate-y-0.5 hover:border-metric-blue/35 hover:bg-panel-hover"
+      className={cn(
+        "min-w-0 cursor-pointer gap-0 p-4 hover:-translate-y-0.5 hover:bg-panel-hover",
+        offline ? "node-card-offline" : "hover:border-metric-blue/35",
+      )}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
@@ -159,9 +171,9 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
         <div className="flex min-w-0 items-center justify-between gap-3">
           <p
             className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground"
-            title={systemInfo(node)}
+            title={displayedSystemInfo}
           >
-            {systemInfo(node)}
+            {displayedSystemInfo}
           </p>
           <div className="shrink-0 text-right">
             <Expiry node={node} />
@@ -169,16 +181,15 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
         </div>
       </div>
 
-      {/* One layout for both states: a disconnected node still knows its
-          cores, memory, disk size and traffic totals, and showing those with
-          the live figures blank beats a stretched card with one line in it. */}
+      {/* Keep a disconnected card's shape, but never present retained telemetry
+          as live. The independent probe summary below remains authoritative. */}
       {deployed(node) ? (
         <>
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
             {/* The core count belongs beside the word CPU: it is what the
                 percentage and the load averages are both measured against. */}
             <Meter
-              label={<span className="inline-flex items-center gap-1.5"><Cpu className="size-3.5 text-metric-blue" />CPU {node.cpu_cores} 核</span>}
+              label={<span className="inline-flex items-center gap-1.5"><Cpu className="size-3.5 text-metric-blue" />CPU {offline ? "—" : `${node.cpu_cores} 核`}</span>}
               pct={m ? m.cpu : null}
               foot={m ? (
                 <span className="inline-flex gap-2">
@@ -201,7 +212,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><MemoryStick className="size-3.5 text-metric-purple" />内存</span>}
               pct={m ? percent(m.mem_used, m.mem_total) : null}
-              foot={m ? pair(m.mem_used, m.mem_total) : bytes(node.mem_total)}
+              foot={offline ? "—" : m ? pair(m.mem_used, m.mem_total) : bytes(node.mem_total)}
               progress={<SegmentedProgress value={m ? percent(m.mem_used, m.mem_total) : 0} segments={16} tone="purple" className="mt-1.5" />}
               tone="purple"
               color={m ? usageColor(percent(m.mem_used, m.mem_total)) : undefined}
@@ -209,17 +220,17 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><HardDrive className="size-3.5 text-metric-orange" />硬盘</span>}
               pct={m ? percent(m.disk_used, m.disk_total) : null}
-              foot={m ? pair(m.disk_used, m.disk_total) : bytes(node.disk_total)}
+              foot={offline ? "—" : m ? pair(m.disk_used, m.disk_total) : bytes(node.disk_total)}
               progress={<SegmentedProgress value={m ? percent(m.disk_used, m.disk_total) : 0} segments={16} tone="orange" className="mt-1.5" />}
               tone="orange"
               color={m ? usageColor(percent(m.disk_used, m.disk_total)) : undefined}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><Gauge className="size-3.5 text-metric-green" />流量</span>}
-              pct={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : null}
-              empty={FOREVER}
-              foot={trafficFoot(node)}
-              progress={<SegmentedProgress value={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : 0} segments={16} tone="green" className="mt-1.5" />}
+              pct={!offline && node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : null}
+              empty={offline ? "—" : FOREVER}
+              foot={offline ? "—" : trafficFoot(node)}
+              progress={<SegmentedProgress value={!offline && node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : 0} segments={16} tone="green" className="mt-1.5" />}
               tone="green"
             />
           </div>
@@ -228,7 +239,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <RuntimeStat
               icon={MemoryStick}
               label="Swap"
-              value={m
+              value={offline ? "—" : m
                 ? m.swap_total > 0 ? bytes(m.swap_total) : "未启用"
                 : node.swap_total > 0 ? bytes(node.swap_total) : "未启用"}
               tone="text-metric-yellow"
@@ -268,7 +279,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <Inbox className="size-3 text-metric-green" />
               <span className="text-muted-foreground">入站</span>
-              <span className="truncate">{bytes(node.total_rx)}</span>
+              <span className="truncate">{offline ? "—" : bytes(node.total_rx)}</span>
             </span>
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowUp className="size-3 text-metric-blue" />
@@ -280,7 +291,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <Send className="size-3 text-metric-blue" />
               <span className="text-muted-foreground">出站</span>
-              <span className="truncate">{bytes(node.total_tx)}</span>
+              <span className="truncate">{offline ? "—" : bytes(node.total_tx)}</span>
             </span>
           </div>
         </>

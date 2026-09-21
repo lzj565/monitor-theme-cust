@@ -6,7 +6,7 @@ import { NodeCard } from "@/components/NodeCard"
 import { Summary } from "@/components/Summary"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, useNodes, type Node } from "@/lib/api"
+import { api, compareNodeDisplayOrder, useNodes, type Node } from "@/lib/api"
 import { getCountryStats, getEffectiveCountry } from "@/lib/country"
 import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
 import { VisitorCard } from "@/components/VisitorCard"
@@ -104,7 +104,7 @@ export default function App() {
   }, [me])
 
   const sorted = useMemo(
-    () => [...(nodes ?? [])].sort((a, b) => a.sort - b.sort || a.id - b.id),
+    () => [...(nodes ?? [])].sort(compareNodeDisplayOrder),
     [nodes],
   )
   const countryStats = useMemo(() => getCountryStats(sorted), [sorted])

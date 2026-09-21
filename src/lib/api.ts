@@ -63,6 +63,15 @@ export type Node = {
   remark?: string
 }
 
+/** Keep live nodes first while preserving the operator's configured order. */
+export function compareNodeDisplayOrder(
+  a: Pick<Node, "online" | "sort" | "id">,
+  b: Pick<Node, "online" | "sort" | "id">,
+): number {
+  if (a.online !== b.online) return a.online ? -1 : 1
+  return a.sort - b.sort || a.id - b.id
+}
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
