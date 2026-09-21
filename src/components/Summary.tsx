@@ -17,7 +17,7 @@ function Tile({ icon: Icon, label, children, tone }: {
   icon: typeof Server; label: string; children: React.ReactNode; tone: string
 }) {
   return (
-    <Card className="min-h-[7.5rem] gap-0 p-3">
+    <Card className="min-h-[8rem] gap-0 p-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Icon className={`size-3.5 ${tone}`} />
         {label}
@@ -85,6 +85,7 @@ function Spark({ series }: { series: { values: number[]; className: string }[] }
 
 export function Summary({ nodes }: { nodes: Node[] }) {
   const summary = summarizeFleet(nodes)
+  const onlineRate = nodes.length > 0 ? (summary.online / nodes.length) * 100 : 0
   const sum = (pick: (n: Node) => number) => nodes.reduce((total, n) => total + pick(n), 0)
   // The same push produced `nodes` and this sample, so the figure above the line
   // is that line's last point.
@@ -93,47 +94,63 @@ export function Summary({ nodes }: { nodes: Node[] }) {
   return (
     <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
       <Tile icon={Server} label="节点状态" tone="text-metric-cyan">
-        <div className="tnum mt-1.5 text-xl font-semibold">
-          {summary.online} / {nodes.length}
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <div>
+            <div className="tnum text-xl font-semibold leading-none">
+              {summary.online} / {nodes.length}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">节点在线</div>
+          </div>
+          <div className="tnum text-sm font-semibold text-ok">{onlineRate.toFixed(0)}%</div>
         </div>
-        <div className="tnum mt-auto grid grid-cols-2 gap-x-3 pt-2 text-xs">
+        <div
+          className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-label="节点在线率"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(onlineRate)}
+        >
+          <div className="h-full rounded-full bg-metric-green transition-[width]" style={{ width: `${onlineRate}%` }} />
+        </div>
+        <div className="tnum mt-2 grid grid-cols-2 gap-x-3 text-xs">
           <span><span className="text-ok">●</span> 在线 {summary.online}</span>
           <span className="text-muted-foreground"><span>○</span> 离线 {summary.offline}</span>
         </div>
-        <div className="tnum mt-1 text-xs text-muted-foreground">
+        <div className="tnum mt-auto pt-1.5 text-xs text-muted-foreground">
           ↑ 最长在线 {summary.longestUptime === null ? "—" : uptime(summary.longestUptime)}
         </div>
       </Tile>
 
       <Tile icon={TrendingUp} label="资源峰值" tone="text-metric-pink">
-        <div className="mt-1.5 grid gap-1 text-xs">
+        <div className="mt-2 grid gap-1.5 text-xs">
           <PeakRow label="CPU" peak={summary.cpu} tone="text-metric-blue" />
           <PeakRow label="RAM" peak={summary.memory} tone="text-metric-purple" />
           <PeakRow label="DISK" peak={summary.disk} tone="text-metric-orange" />
         </div>
       </Tile>
 
-      <Card className="min-h-[7.5rem] gap-0 p-3">
-        <div className="tnum grid grid-cols-2 gap-x-3">
+      <Card className="min-h-[8rem] gap-0 p-3">
+        <div className="tnum grid h-full grid-cols-2 grid-rows-[auto_1fr] gap-x-3">
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <ArrowDownUp className="size-3.5 shrink-0 text-metric-green" />
             今日流量
           </div>
           <div className="text-xs text-muted-foreground">总流量</div>
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center pb-1 pt-2">
             <Flow
               down={bytes(sum((n) => n.day_rx))}
               up={bytes(sum((n) => n.day_tx))}
-              className="mt-1 text-sm font-semibold"
+              className="gap-y-1.5 text-xs font-semibold sm:text-[0.8125rem]"
               kind="traffic"
               stacked
             />
           </div>
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center pb-1 pt-2">
             <Flow
               down={bytes(sum((n) => n.total_rx))}
               up={bytes(sum((n) => n.total_tx))}
-              className="mt-1 text-sm"
+              className="gap-y-1.5 text-xs font-semibold sm:text-[0.8125rem]"
               kind="traffic"
               stacked
             />
@@ -147,7 +164,7 @@ export function Summary({ nodes }: { nodes: Node[] }) {
           up={rate(now.tx)}
           downTone={rateTone[rateSeverity(now.rx)]}
           upTone={rateTone[rateSeverity(now.tx)]}
-          className="mt-1 text-sm font-semibold"
+          className="mt-2 text-sm font-semibold"
         />
         <div className="mt-auto pt-1">
           <Spark

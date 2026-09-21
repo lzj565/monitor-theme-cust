@@ -1,5 +1,3 @@
-import { ArrowDown } from "lucide-react"
-
 import { countryCodeToFlag, type CountryStat } from "@/lib/country"
 import type { NodeSortMode } from "@/lib/dashboard"
 import { cn } from "@/lib/utils"
@@ -41,7 +39,7 @@ export function CountryFilter({ stats, selectedCountry, onChange, sortMode, onSo
         aria-label={sortMode === "download" ? "当前按下载速度从高到低排序，点击恢复默认排序" : "当前为默认排序，点击按下载速度从高到低排序"}
         onClick={() => onSortChange(sortMode === "default" ? "download" : "default")}
       >
-        {sortMode === "download" ? <>下载速度 <ArrowDown /></> : "默认排序"}
+        {sortMode === "download" ? "实时网速" : "默认排序"}
       </button>
     </div>
   )
