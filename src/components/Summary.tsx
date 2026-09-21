@@ -1,8 +1,9 @@
-import { Activity, ArrowDown, ArrowDownUp, ArrowUp, Gauge, Inbox, Send, Server } from "lucide-react"
+import { ArrowDown, ArrowDownUp, ArrowUp, Gauge, Inbox, Send, Server, TrendingUp } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import { speedHistory, type Node } from "@/lib/api"
-import { bytes, rate, rateSeverity, type RateSeverity } from "@/lib/format"
+import { summarizeFleet, type ResourcePeak } from "@/lib/dashboard"
+import { bytes, rate, rateSeverity, uptime, type RateSeverity } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const rateTone: Record<RateSeverity, string> = {
@@ -83,35 +84,32 @@ function Spark({ series }: { series: { values: number[]; className: string }[] }
 }
 
 export function Summary({ nodes }: { nodes: Node[] }) {
-  const online = nodes.filter((n) => n.online)
+  const summary = summarizeFleet(nodes)
   const sum = (pick: (n: Node) => number) => nodes.reduce((total, n) => total + pick(n), 0)
-
-  // The busiest node rather than the average: one machine at 95% is what matters,
-  // and a fleet of idle ones would average it away.
-  const busiest = online.reduce<Node | null>(
-    (top, n) => (n.metrics && (!top || n.metrics.cpu > top.metrics!.cpu) ? n : top),
-    null,
-  )
-  const cpu = busiest?.metrics?.cpu ?? 0
   // The same push produced `nodes` and this sample, so the figure above the line
   // is that line's last point.
   const now = speedHistory.at(-1) ?? { rx: 0, tx: 0 }
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Tile icon={Server} label="节点" tone="text-metric-cyan">
-        <div className="tnum mt-1 text-xl font-semibold">
-          {online.length} / {nodes.length}
+      <Tile icon={Server} label="节点状态" tone="text-metric-cyan">
+        <div className="tnum mt-1.5 text-xl font-semibold">
+          {summary.online} / {nodes.length}
         </div>
-        <div className="mt-auto pt-1 text-xs text-muted-foreground">
-          {nodes.length - online.length > 0 ? `${nodes.length - online.length} 个离线` : "全部在线"}
+        <div className="tnum mt-auto grid grid-cols-2 gap-x-3 pt-2 text-xs">
+          <span><span className="text-ok">●</span> 在线 {summary.online}</span>
+          <span className="text-muted-foreground"><span>○</span> 离线 {summary.offline}</span>
+        </div>
+        <div className="tnum mt-1 text-xs text-muted-foreground">
+          ↑ 最长在线 {summary.longestUptime === null ? "—" : uptime(summary.longestUptime)}
         </div>
       </Tile>
 
-      <Tile icon={Activity} label="最忙节点" tone="text-metric-pink">
-        <div className="tnum mt-1 text-xl font-semibold">{busiest ? `${cpu.toFixed(1)}%` : "—"}</div>
-        <div className={cn("mt-auto truncate pt-1 text-xs", cpu >= 85 ? "font-medium text-foreground" : "text-muted-foreground")}>
-          {busiest ? busiest.name : "无在线节点"}
+      <Tile icon={TrendingUp} label="资源峰值" tone="text-metric-pink">
+        <div className="mt-1.5 grid gap-1 text-xs">
+          <PeakRow label="CPU" peak={summary.cpu} tone="text-metric-blue" />
+          <PeakRow label="RAM" peak={summary.memory} tone="text-metric-purple" />
+          <PeakRow label="DISK" peak={summary.disk} tone="text-metric-orange" />
         </div>
       </Tile>
 
@@ -160,6 +158,19 @@ export function Summary({ nodes }: { nodes: Node[] }) {
           />
         </div>
       </Tile>
+    </div>
+  )
+}
+
+function PeakRow({ label, peak, tone }: { label: string; peak: ResourcePeak | null; tone: string }) {
+  const value = peak ? `${peak.value.toFixed(1).replace(/\.0$/, "")}%` : "—"
+  return (
+    <div className="grid min-w-0 grid-cols-[2.5rem_3.5rem_minmax(0,1fr)] items-center gap-1.5">
+      <span className={cn("font-medium", tone)}>{label}</span>
+      <span className="tnum text-right font-semibold">{value}</span>
+      <span className="truncate text-right text-muted-foreground" title={peak?.node.name}>
+        {peak?.node.name ?? "—"}
+      </span>
     </div>
   )
 }

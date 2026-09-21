@@ -6,8 +6,9 @@ import { NodeCard } from "@/components/NodeCard"
 import { Summary } from "@/components/Summary"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, compareNodeDisplayOrder, useNodes, type Node } from "@/lib/api"
+import { api, useNodes, type Node } from "@/lib/api"
 import { getCountryStats, getEffectiveCountry } from "@/lib/country"
+import { compareNodes, type NodeSortMode } from "@/lib/dashboard"
 import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
 import { VisitorCard } from "@/components/VisitorCard"
 
@@ -64,6 +65,7 @@ export default function App() {
   const { nodes, error, closed } = useNodes()
   const [open, go] = useNodeRoute()
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<NodeSortMode>("default")
   const [visitor, setVisitor] = useState<VisitorInfo | null>(null)
   const closeVisitor = useCallback(() => setVisitor(null), [])
 
@@ -103,18 +105,22 @@ export default function App() {
     if (me && !me.public_page && !me.authed) location.href = "/admin/"
   }, [me])
 
-  const sorted = useMemo(
-    () => [...(nodes ?? [])].sort(compareNodeDisplayOrder),
+  const ordered = useMemo(
+    () => [...(nodes ?? [])].sort(compareNodes("default")),
     [nodes],
   )
-  const countryStats = useMemo(() => getCountryStats(sorted), [sorted])
+  const sorted = useMemo(
+    () => [...ordered].sort(compareNodes(sortMode)),
+    [ordered, sortMode],
+  )
+  const countryStats = useMemo(() => getCountryStats(ordered), [ordered])
   const filteredNodes = useMemo(
     () => selectedCountry
       ? sorted.filter((node) => getEffectiveCountry(node) === selectedCountry)
       : sorted,
     [selectedCountry, sorted],
   )
-  const selected = sorted.find((n) => n.id === open)
+  const selected = ordered.find((n) => n.id === open)
 
   useEffect(() => {
     if (selectedCountry && !countryStats.some((item) => item.country === selectedCountry)) {
@@ -187,11 +193,13 @@ export default function App() {
           </div>
         ) : (
           <>
-            <Summary nodes={sorted} />
+            <Summary nodes={ordered} />
             <CountryFilter
               stats={countryStats}
               selectedCountry={selectedCountry}
               onChange={setSelectedCountry}
+              sortMode={sortMode}
+              onSortChange={setSortMode}
             />
             {sorted.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">还没有节点</p>
