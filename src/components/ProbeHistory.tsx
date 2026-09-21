@@ -48,13 +48,14 @@ function CurrentLoss({ loss }: { loss?: number }) {
 }
 
 function HistoryBlocks({
-  history, kind, animateNewest, onTooltip, latencyColor = getLatencyColor,
+  history, kind, animateNewest, onTooltip, latencyColor = getLatencyColor, compact = false,
 }: {
   history: ProbeHistorySlot[]
   kind: "latency" | "loss"
   animateNewest: boolean
   onTooltip: (next: TooltipState) => void
   latencyColor?: LatencyColor
+  compact?: boolean
 }) {
   const label = kind === "latency" ? "延迟" : "丢包"
   const describe = (slot: ProbeHistorySlot) => {
@@ -76,7 +77,7 @@ function HistoryBlocks({
 
   return (
     <div
-      className="grid h-2.5 w-full gap-px"
+      className={cn("grid w-full gap-px", compact ? "h-[5px]" : "h-2.5")}
       style={{ gridTemplateColumns: `repeat(${history.length}, minmax(1px, 1fr))` }}
     >
         {history.map((slot, index) => {
@@ -89,7 +90,7 @@ function HistoryBlocks({
               key={slot.startAt}
               aria-label={text}
               className={cn(
-                "h-2.5 min-w-0 rounded-[2px]",
+                compact ? "h-[5px] min-w-0 rounded-full" : "h-2.5 min-w-0 rounded-[2px]",
                 animateNewest && index === history.length - 1 && "probe-new-block",
               )}
               style={{ backgroundColor: color }}
@@ -314,10 +315,17 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                       animateNewest={false}
                       onTooltip={setTooltip}
                       latencyColor={getCardLatencyColor}
+                      compact
                     />
                   </div>
                   <div className="min-w-0">
-                    <HistoryBlocks history={target.history} kind="loss" animateNewest={false} onTooltip={setTooltip} />
+                    <HistoryBlocks
+                      history={target.history}
+                      kind="loss"
+                      animateNewest={false}
+                      onTooltip={setTooltip}
+                      compact
+                    />
                   </div>
                 </div>
               </div>
