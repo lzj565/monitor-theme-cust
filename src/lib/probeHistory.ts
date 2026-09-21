@@ -93,6 +93,16 @@ export function getLatencyColor(ms: number | null | undefined): string {
   return "var(--probe-red)"
 }
 
+/** Homepage cards use fewer, clearer severity bands than the detail chart. */
+export function getCardLatencyColor(ms: number | null | undefined): string {
+  if (ms === undefined) return "var(--probe-empty)"
+  if (ms === null) return "var(--probe-timeout)"
+  if (ms < 50) return "var(--probe-green)"
+  if (ms < 100) return "var(--probe-yellow)"
+  if (ms <= 200) return "var(--probe-amber)"
+  return "var(--probe-red)"
+}
+
 export function getPacketLossColor(loss: number | undefined): string {
   if (loss === undefined) return "var(--probe-empty)"
   if (loss <= 1) return "var(--probe-green)"

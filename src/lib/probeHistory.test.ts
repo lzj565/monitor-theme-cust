@@ -1,5 +1,5 @@
 import {
-  activeWindowPacketLoss, formatPacketLoss, getLatencyColor, getPacketLossColor, historySlots,
+  activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getLatencyColor, getPacketLossColor, historySlots,
   latestProbeSlot, orderedProbeIds, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
 } from "./probeHistory.ts"
 
@@ -42,6 +42,15 @@ eq(
     "var(--probe-amber)", "var(--probe-orange)", "var(--probe-orange)", "var(--probe-red)",
   ],
   "延迟颜色边界",
+)
+
+eq(
+  [undefined, null, 49, 50, 99, 100, 200, 201].map(getCardLatencyColor),
+  [
+    "var(--probe-empty)", "var(--probe-timeout)", "var(--probe-green)", "var(--probe-yellow)",
+    "var(--probe-yellow)", "var(--probe-amber)", "var(--probe-amber)", "var(--probe-red)",
+  ],
+  "首页卡片延迟颜色边界",
 )
 
 eq(

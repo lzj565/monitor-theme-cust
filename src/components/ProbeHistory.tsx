@@ -3,13 +3,14 @@ import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import {
-  activeWindowPacketLoss, formatPacketLoss, getLatencyColor, getPacketLossColor, latestProbeSlot,
+  activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getLatencyColor, getPacketLossColor, latestProbeSlot,
   probeHistoryTargets, PROBE_HISTORY, targetsWithData, type ProbeHistorySlot,
 } from "@/lib/probeHistory"
 import { loadProbeHistory, nextProbeRefreshDelay, type ProbeHistoryResponse } from "@/lib/probeHistoryClient"
 import { cn } from "@/lib/utils"
 
 type TooltipState = { x: number; y: number; text: string; alignRight: boolean } | null
+type LatencyColor = (ms: number | null | undefined) => string
 
 const TIME = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" })
 
@@ -17,14 +18,22 @@ function rangeLabel(slot: ProbeHistorySlot) {
   return `${TIME.format(slot.startAt * 1_000)} - ${TIME.format(slot.endAt * 1_000)}`
 }
 
-function CurrentLatency({ slot }: { slot?: ProbeHistorySlot }) {
+function CurrentLatency({
+  slot,
+  latencyColor = getLatencyColor,
+  colorUnit = false,
+}: {
+  slot?: ProbeHistorySlot
+  latencyColor?: LatencyColor
+  colorUnit?: boolean
+}) {
   if (!slot?.hasData) return <span className="text-muted-foreground">—</span>
   if (slot.latency === null) {
-    return <span style={{ color: getLatencyColor(null) }}>超时</span>
+    return <span style={{ color: latencyColor(null) }}>超时</span>
   }
   return (
-    <span className="tnum font-semibold" style={{ color: getLatencyColor(slot.latency) }}>
-      {slot.latency}<span className="ml-0.5 font-normal text-muted-foreground">ms</span>
+    <span className="tnum font-semibold" style={{ color: latencyColor(slot.latency) }}>
+      {slot.latency}<span className={cn("ml-0.5 font-normal", !colorUnit && "text-muted-foreground")}>ms</span>
     </span>
   )
 }
@@ -39,12 +48,13 @@ function CurrentLoss({ loss }: { loss?: number }) {
 }
 
 function HistoryBlocks({
-  history, kind, animateNewest, onTooltip,
+  history, kind, animateNewest, onTooltip, latencyColor = getLatencyColor,
 }: {
   history: ProbeHistorySlot[]
   kind: "latency" | "loss"
   animateNewest: boolean
   onTooltip: (next: TooltipState) => void
+  latencyColor?: LatencyColor
 }) {
   const label = kind === "latency" ? "延迟" : "丢包"
   const describe = (slot: ProbeHistorySlot) => {
@@ -71,7 +81,7 @@ function HistoryBlocks({
     >
         {history.map((slot, index) => {
           const color = kind === "latency"
-            ? getLatencyColor(slot.latency)
+            ? latencyColor(slot.latency)
             : getPacketLossColor(slot.packetLoss)
           const text = describe(slot)
           return (
@@ -288,7 +298,9 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                 <div className="mb-1 grid grid-cols-2 gap-2 text-[11px]">
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="truncate font-medium">{target.name}</span>
-                    <span className="ml-auto shrink-0"><CurrentLatency slot={latest} /></span>
+                    <span className="ml-auto shrink-0">
+                      <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
+                    </span>
                   </div>
                   <div className="flex items-center justify-end">
                     <CurrentLoss loss={loss} />
@@ -296,7 +308,13 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="min-w-0">
-                    <HistoryBlocks history={target.history} kind="latency" animateNewest={false} onTooltip={setTooltip} />
+                    <HistoryBlocks
+                      history={target.history}
+                      kind="latency"
+                      animateNewest={false}
+                      onTooltip={setTooltip}
+                      latencyColor={getCardLatencyColor}
+                    />
                   </div>
                   <div className="min-w-0">
                     <HistoryBlocks history={target.history} kind="loss" animateNewest={false} onTooltip={setTooltip} />
