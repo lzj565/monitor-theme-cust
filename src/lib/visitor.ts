@@ -146,6 +146,20 @@ export function countryLabel(country: string, countryCode: string): string {
   return country || code
 }
 
+/** Hide the identifying middle of an address while keeping it recognizable. */
+export function maskVisitorIp(value: string): string {
+  const ip = value.trim()
+  const ipv4 = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (ipv4) return `${ipv4[1]}.${ipv4[2]}.***.${ipv4[4]}`
+
+  if (ip.includes(":")) {
+    const groups = ip.split(":").filter(Boolean)
+    if (groups.length >= 3) return `${groups.slice(0, 2).join(":")}:***:${groups.at(-1)}`
+  }
+
+  return "***"
+}
+
 /** Keep third-party response shapes out of the UI and discard unusable data. */
 export function normalizeVisitor(value: unknown, userAgent = readUserAgent()): VisitorInfo | null {
   if (!value || typeof value !== "object") return null

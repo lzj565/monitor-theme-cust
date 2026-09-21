@@ -1,5 +1,5 @@
 import {
-  countryLabel, detectVisitorEnvironment, normalizeVisitor, resolveVisitorEnvironment,
+  countryLabel, detectVisitorEnvironment, maskVisitorIp, normalizeVisitor, resolveVisitorEnvironment,
 } from "./visitor.ts"
 
 const complete = normalizeVisitor({
@@ -92,6 +92,11 @@ if (!placeholders || placeholders.country || placeholders.region || placeholders
 }
 
 if (countryLabel("Japan", "JP") !== "Japan 日本") throw new Error("formats bilingual country name")
+if (maskVisitorIp("161.142.251.14") !== "161.142.***.14") throw new Error("masks IPv4 addresses")
+if (maskVisitorIp("2001:db8:85a3::8a2e:370:7334") !== "2001:db8:***:7334") {
+  throw new Error("masks IPv6 addresses")
+}
+if (maskVisitorIp("not-an-ip") !== "***") throw new Error("hides unrecognized addresses")
 
 if (normalizeVisitor({ city: "Beijing" }) !== null) throw new Error("rejects missing IP")
 if (normalizeVisitor(null) !== null) throw new Error("rejects invalid response")

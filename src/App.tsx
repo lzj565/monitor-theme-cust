@@ -65,7 +65,6 @@ export default function App() {
   const [open, go] = useNodeRoute()
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
   const [visitor, setVisitor] = useState<VisitorInfo | null>(null)
-  const closeVisitor = useCallback(() => setVisitor(null), [])
 
   const loadMe = useCallback(() => {
     // `|| "..."` because an empty message reads as no error: api() falls back to
@@ -207,7 +206,7 @@ export default function App() {
           </>
         )}
       </main>
-      {open === null && visitor && <VisitorCard info={visitor} onClose={closeVisitor} />}
+      {open === null && visitor && <VisitorCard info={visitor} />}
     </div>
   )
 }
