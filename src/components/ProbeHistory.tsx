@@ -3,8 +3,8 @@ import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import {
-  activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getLatencyColor, getPacketLossColor, latestProbeSlot,
-  probeHistoryTargets, PROBE_HISTORY, targetsWithData, type ProbeHistorySlot,
+  activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getCardProbeColor, getLatencyColor,
+  getPacketLossColor, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, targetsWithData, type ProbeHistorySlot,
 } from "@/lib/probeHistory"
 import { loadProbeHistory, nextProbeRefreshDelay, type ProbeHistoryResponse } from "@/lib/probeHistoryClient"
 import { cn } from "@/lib/utils"
@@ -51,17 +51,25 @@ function HistoryBlocks({
   history, kind, animateNewest, onTooltip, latencyColor = getLatencyColor, compact = false,
 }: {
   history: ProbeHistorySlot[]
-  kind: "latency" | "loss"
+  kind: "latency" | "loss" | "combined"
   animateNewest: boolean
   onTooltip: (next: TooltipState) => void
   latencyColor?: LatencyColor
   compact?: boolean
 }) {
-  const label = kind === "latency" ? "延迟" : "丢包"
+  const label = kind === "latency" ? "延迟" : kind === "loss" ? "丢包" : "网络质量"
   const describe = (slot: ProbeHistorySlot) => {
     if (!slot.hasData) return `${rangeLabel(slot)} · ${label}无数据`
     if (kind === "latency") {
       return `${rangeLabel(slot)} · ${slot.latency === null ? "延迟超时" : `延迟 ${slot.latency} ms`}`
+    }
+    if (kind === "combined") {
+      const latency = slot.latency === undefined
+        ? "延迟无数据"
+        : slot.latency === null
+          ? "延迟超时"
+          : `延迟 ${slot.latency} ms`
+      return `${rangeLabel(slot)} · ${latency} · 丢包 ${formatPacketLoss(slot.packetLoss ?? 0)}%`
     }
     return `${rangeLabel(slot)} · 丢包 ${slot.packetLoss ?? 0}%`
   }
@@ -83,7 +91,9 @@ function HistoryBlocks({
         {history.map((slot, index) => {
           const color = kind === "latency"
             ? latencyColor(slot.latency)
-            : getPacketLossColor(slot.packetLoss)
+            : kind === "loss"
+              ? getPacketLossColor(slot.packetLoss)
+              : getCardProbeColor(slot.latency, slot.packetLoss)
           const text = describe(slot)
           return (
             <span
@@ -281,7 +291,7 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
 
   const { response, loadedAt } = useProbeData(nodeId, visible)
   const targets = useMemo(
-    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 3),
+    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 6),
     [response, loadedAt],
   )
 
@@ -307,27 +317,14 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
                     <CurrentLoss loss={loss} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="min-w-0">
-                    <HistoryBlocks
-                      history={target.history}
-                      kind="latency"
-                      animateNewest={false}
-                      onTooltip={setTooltip}
-                      latencyColor={getCardLatencyColor}
-                      compact
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <HistoryBlocks
-                      history={target.history}
-                      kind="loss"
-                      animateNewest={false}
-                      onTooltip={setTooltip}
-                      compact
-                    />
-                  </div>
-                </div>
+                <HistoryBlocks
+                  history={target.history}
+                  kind="combined"
+                  animateNewest={false}
+                  onTooltip={setTooltip}
+                  latencyColor={getCardLatencyColor}
+                  compact
+                />
               </div>
             )
           })}

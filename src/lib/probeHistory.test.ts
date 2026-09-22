@@ -1,6 +1,7 @@
 import {
-  activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getLatencyColor, getPacketLossColor, historySlots,
-  latestProbeSlot, orderedProbeIds, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
+  activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getCardProbeColor, getLatencyColor,
+  getPacketLossColor, historySlots, latestProbeSlot, orderedProbeIds, probeHistoryTargets, PROBE_HISTORY,
+  targetsWithData,
 } from "./probeHistory.ts"
 
 let failed = 0
@@ -65,6 +66,17 @@ eq(
   "丢包颜色边界",
 )
 
+eq(
+  [
+    getCardProbeColor(undefined, undefined),
+    getCardProbeColor(250, 0),
+    getCardProbeColor(35, 0.1),
+    getCardProbeColor(null, 100),
+  ],
+  ["var(--probe-empty)", "var(--probe-orange)", "var(--probe-loss-neutral)", "var(--probe-loss-neutral)"],
+  "首页合并延迟与丢包颜色",
+)
+
 {
   const bucket = PROBE_HISTORY.bucketSeconds
   const now = 10 * bucket + 30
@@ -101,11 +113,11 @@ eq(
 {
   const bucket = PROBE_HISTORY.bucketSeconds
   const targets = probeHistoryTargets(
-    { "1": "空", "2": "一", "3": "二", "4": "三", "5": "四" },
-    [2, 3, 4, 5].map((task_id) => ({ task_id, ts: 9 * bucket, latency: task_id * 10 })),
+    { "1": "空", "2": "一", "3": "二", "4": "三", "5": "四", "6": "五", "7": "六", "8": "七" },
+    [2, 3, 4, 5, 6, 7, 8].map((task_id) => ({ task_id, ts: 9 * bucket, latency: task_id * 10 })),
     10 * bucket + 1,
   )
-  eq(targetsWithData(targets, 3).map((target) => target.id), [2, 3, 4], "首页取过滤后的前三个")
+  eq(targetsWithData(targets, 6).map((target) => target.id), [2, 3, 4, 5, 6, 7], "首页取过滤后的前六个")
 }
 
 eq(
