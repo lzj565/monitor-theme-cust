@@ -325,7 +325,7 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
       {targets.length > 0 && (
         <div className="mt-4 border-t pt-3" aria-label="网络质量">
           <QualityLegend />
-          <div className="grid grid-cols-1 gap-x-2 gap-y-2.5 min-[480px]:grid-cols-2">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
             {targets.map((target) => {
               const latest = latestProbeSlot(target)
               const loss = activeWindowPacketLoss(
