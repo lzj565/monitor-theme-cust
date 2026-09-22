@@ -291,7 +291,7 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
 
   const { response, loadedAt } = useProbeData(nodeId, visible)
   const targets = useMemo(
-    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 6),
+    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 3),
     [response, loadedAt],
   )
 
@@ -306,14 +306,10 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
             )
             return (
               <div key={target.id} className="min-w-0">
-                <div className="mb-1 grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate font-medium">{target.name}</span>
-                    <span className="ml-auto shrink-0">
-                      <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-end">
+                <div className="mb-1 flex min-w-0 items-center gap-2 text-[11px]">
+                  <span className="min-w-0 flex-1 truncate font-medium">{target.name}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
                     <CurrentLoss loss={loss} />
                   </div>
                 </div>
