@@ -105,10 +105,12 @@ export function getCardLatencyColor(ms: number | null | undefined): string {
   return "var(--probe-red)"
 }
 
-/** Homepage history uses one high-contrast block to mark any packet loss. */
+/** Homepage history uses three purple bands for increasing packet loss. */
 export function getCardProbeColor(ms: number | null | undefined, loss: number | undefined): string {
-  if (loss !== undefined && loss > 0) return "var(--probe-loss-marker)"
-  return getCardLatencyColor(ms)
+  if (loss === undefined || loss <= 0) return getCardLatencyColor(ms)
+  if (loss < 50) return "var(--probe-loss-marker-low)"
+  if (loss < 100) return "var(--probe-loss-marker-mid)"
+  return "var(--probe-loss-marker-high)"
 }
 
 export function getPacketLossColor(loss: number | undefined): string {

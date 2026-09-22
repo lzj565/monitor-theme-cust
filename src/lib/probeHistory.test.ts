@@ -71,10 +71,17 @@ eq(
     getCardProbeColor(undefined, undefined),
     getCardProbeColor(250, 0),
     getCardProbeColor(35, 0.1),
+    getCardProbeColor(35, 49.9),
+    getCardProbeColor(35, 50),
+    getCardProbeColor(35, 99.9),
     getCardProbeColor(null, 100),
   ],
-  ["var(--probe-empty)", "var(--probe-orange)", "var(--probe-loss-marker)", "var(--probe-loss-marker)"],
-  "首页合并延迟与丢包颜色",
+  [
+    "var(--probe-empty)", "var(--probe-orange)", "var(--probe-loss-marker-low)",
+    "var(--probe-loss-marker-low)", "var(--probe-loss-marker-mid)", "var(--probe-loss-marker-mid)",
+    "var(--probe-loss-marker-high)",
+  ],
+  "首页按严重程度区分丢包紫色",
 )
 
 {

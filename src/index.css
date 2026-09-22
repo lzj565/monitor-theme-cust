@@ -69,7 +69,9 @@
   --probe-loss-orange: #ef5b3f;
   --probe-loss-red: #dc3028;
   --probe-loss-total: #d92720;
-  --probe-loss-marker: #a21caf;
+  --probe-loss-marker-low: #a855f7;
+  --probe-loss-marker-mid: #7e22ce;
+  --probe-loss-marker-high: #581c87;
   --probe-empty: rgb(27 36 48 / 10%);
 }
 
@@ -129,7 +131,9 @@
   --probe-loss-orange: #ef5b3f;
   --probe-loss-red: #dc3028;
   --probe-loss-total: #d92720;
-  --probe-loss-marker: #e879f9;
+  --probe-loss-marker-low: #e9d5ff;
+  --probe-loss-marker-mid: #c084fc;
+  --probe-loss-marker-high: #9333ea;
   --probe-empty: rgb(255 255 255 / 10%);
 }
 

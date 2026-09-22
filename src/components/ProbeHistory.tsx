@@ -195,8 +195,8 @@ function QualityLegend() {
         延迟
       </span>
       <span className="inline-flex items-center gap-1">
-        <span className="size-1.5 rounded-[2px]" style={{ backgroundColor: "var(--probe-loss-marker)" }} />
-        丢包
+        <span className="size-1.5 rounded-[2px]" style={{ backgroundColor: "var(--probe-loss-marker-mid)" }} />
+        丢包（深浅表示严重程度）
       </span>
       <span className="inline-flex items-center gap-1">
         <span className="size-1.5 rounded-[2px]" style={{ backgroundColor: "var(--probe-empty)" }} />
