@@ -69,7 +69,7 @@
   --probe-loss-orange: #ef5b3f;
   --probe-loss-red: #dc3028;
   --probe-loss-total: #d92720;
-  --probe-loss-neutral: #202733;
+  --probe-loss-marker: #a21caf;
   --probe-empty: rgb(27 36 48 / 10%);
 }
 
@@ -129,7 +129,7 @@
   --probe-loss-orange: #ef5b3f;
   --probe-loss-red: #dc3028;
   --probe-loss-total: #d92720;
-  --probe-loss-neutral: #8b95a5;
+  --probe-loss-marker: #e879f9;
   --probe-empty: rgb(255 255 255 / 10%);
 }
 

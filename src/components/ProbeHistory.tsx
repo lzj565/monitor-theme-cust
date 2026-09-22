@@ -181,6 +181,31 @@ function ProbeTooltip({ tooltip }: { tooltip: TooltipState }) {
   )
 }
 
+function QualityLegend() {
+  return (
+    <div
+      className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground"
+      aria-label="网络质量图例"
+    >
+      <span className="inline-flex items-center gap-1">
+        <span
+          className="h-1.5 w-5 rounded-[2px]"
+          style={{ background: "linear-gradient(90deg, var(--probe-green), var(--probe-yellow), var(--probe-red))" }}
+        />
+        延迟
+      </span>
+      <span className="inline-flex items-center gap-1">
+        <span className="size-1.5 rounded-[2px]" style={{ backgroundColor: "var(--probe-loss-marker)" }} />
+        丢包
+      </span>
+      <span className="inline-flex items-center gap-1">
+        <span className="size-1.5 rounded-[2px]" style={{ backgroundColor: "var(--probe-empty)" }} />
+        无数据
+      </span>
+    </div>
+  )
+}
+
 export function ProbeHistory({ nodeId }: { nodeId: number }) {
   const { response, loadedAt, error, retry, animatedBucket } = useProbeData(nodeId)
   const [tooltip, setTooltip] = useState<TooltipState>(null)
@@ -291,39 +316,42 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
 
   const { response, loadedAt } = useProbeData(nodeId, visible)
   const targets = useMemo(
-    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 3),
+    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 6),
     [response, loadedAt],
   )
 
   return (
     <div ref={root} className="min-h-px" onClick={(event) => event.stopPropagation()}>
       {targets.length > 0 && (
-        <div className="mt-4 space-y-2.5 border-t pt-3" aria-label="网络质量">
-          {targets.map((target) => {
-            const latest = latestProbeSlot(target)
-            const loss = activeWindowPacketLoss(
-              response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id, loadedAt / 1_000,
-            )
-            return (
-              <div key={target.id} className="min-w-0">
-                <div className="mb-1 flex min-w-0 items-center gap-2 text-[11px]">
-                  <span className="min-w-0 flex-1 truncate font-medium">{target.name}</span>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
-                    <CurrentLoss loss={loss} />
+        <div className="mt-4 border-t pt-3" aria-label="网络质量">
+          <QualityLegend />
+          <div className="grid grid-cols-1 gap-x-2 gap-y-2.5 min-[480px]:grid-cols-2">
+            {targets.map((target) => {
+              const latest = latestProbeSlot(target)
+              const loss = activeWindowPacketLoss(
+                response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id, loadedAt / 1_000,
+              )
+              return (
+                <div key={target.id} className="min-w-0">
+                  <div className="mb-1 flex min-w-0 items-center gap-2 text-[11px]">
+                    <span className="min-w-0 flex-1 truncate font-medium">{target.name}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
+                      <CurrentLoss loss={loss} />
+                    </div>
                   </div>
+                  <HistoryBlocks
+                    history={target.history}
+                    kind="combined"
+                    animateNewest={false}
+                    onTooltip={setTooltip}
+                    latencyColor={getCardLatencyColor}
+                    compact
+                  />
                 </div>
-                <HistoryBlocks
-                  history={target.history}
-                  kind="combined"
-                  animateNewest={false}
-                  onTooltip={setTooltip}
-                  latencyColor={getCardLatencyColor}
-                  compact
-                />
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
           <ProbeTooltip tooltip={tooltip} />
         </div>
       )}

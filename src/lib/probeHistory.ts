@@ -105,9 +105,9 @@ export function getCardLatencyColor(ms: number | null | undefined): string {
   return "var(--probe-red)"
 }
 
-/** Homepage history uses one neutral block to mark any packet loss. */
+/** Homepage history uses one high-contrast block to mark any packet loss. */
 export function getCardProbeColor(ms: number | null | undefined, loss: number | undefined): string {
-  if (loss !== undefined && loss > 0) return "var(--probe-loss-neutral)"
+  if (loss !== undefined && loss > 0) return "var(--probe-loss-marker)"
   return getCardLatencyColor(ms)
 }
 

@@ -73,7 +73,7 @@ eq(
     getCardProbeColor(35, 0.1),
     getCardProbeColor(null, 100),
   ],
-  ["var(--probe-empty)", "var(--probe-orange)", "var(--probe-loss-neutral)", "var(--probe-loss-neutral)"],
+  ["var(--probe-empty)", "var(--probe-orange)", "var(--probe-loss-marker)", "var(--probe-loss-marker)"],
   "首页合并延迟与丢包颜色",
 )
 
@@ -117,7 +117,7 @@ eq(
     [2, 3, 4, 5, 6, 7, 8].map((task_id) => ({ task_id, ts: 9 * bucket, latency: task_id * 10 })),
     10 * bucket + 1,
   )
-  eq(targetsWithData(targets, 3).map((target) => target.id), [2, 3, 4], "首页取过滤后的前三个")
+  eq(targetsWithData(targets, 6).map((target) => target.id), [2, 3, 4, 5, 6, 7], "首页取过滤后的前六个")
 }
 
 eq(
