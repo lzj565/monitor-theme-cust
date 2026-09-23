@@ -34,6 +34,12 @@ export function targetsWithData(targets: ProbeHistoryTarget[], limit = Infinity)
   return targets.filter((target) => target.history.some((slot) => slot.hasData)).slice(0, limit)
 }
 
+/** Fill the left column first, leaving at least one target for the right when possible. */
+export function splitTargetsIntoColumns<T>(targets: T[]): [T[], T[]] {
+  const leftCount = Math.ceil(targets.length / 2)
+  return [targets.slice(0, leftCount), targets.slice(leftCount)]
+}
+
 export function latestProbeSlot(target: ProbeHistoryTarget) {
   return target.history.findLast((slot) => slot.hasData)
 }
