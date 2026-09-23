@@ -1,7 +1,7 @@
 import {
   activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getCardProbeColor, getLatencyColor,
   getPacketLossColor, historySlots, latestProbeSlot, orderedProbeIds, probeHistoryTargets, PROBE_HISTORY,
-  splitTargetsIntoColumns, targetsWithData,
+  targetsWithData,
 } from "./probeHistory.ts"
 
 let failed = 0
@@ -124,14 +124,7 @@ eq(
     [2, 3, 4, 5, 6, 7, 8].map((task_id) => ({ task_id, ts: 9 * bucket, latency: task_id * 10 })),
     10 * bucket + 1,
   )
-  eq(targetsWithData(targets, 6).map((target) => target.id), [2, 3, 4, 5, 6, 7], "首页取过滤后的前六个")
-}
-
-for (let count = 1; count <= 6; count++) {
-  const ids = Array.from({ length: count }, (_, index) => index + 1)
-  const [left, right] = splitTargetsIntoColumns(ids)
-  const leftCount = Math.ceil(count / 2)
-  eq([left, right], [ids.slice(0, leftCount), ids.slice(leftCount)], `首页 ${count} 个探测按列优先排列`)
+  eq(targetsWithData(targets, 3).map((target) => target.id), [2, 3, 4], "首页只显示按 ID 排序且有数据的前三个探测")
 }
 
 eq(

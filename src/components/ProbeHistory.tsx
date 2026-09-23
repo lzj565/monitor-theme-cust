@@ -4,8 +4,8 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import {
   activeWindowPacketLoss, formatPacketLoss, getCardLatencyColor, getCardProbeColor, getLatencyColor,
-  getPacketLossColor, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, splitTargetsIntoColumns,
-  targetsWithData, type ProbeHistorySlot,
+  getPacketLossColor, latestProbeSlot, probeHistoryTargets, PROBE_HISTORY, targetsWithData,
+  type ProbeHistorySlot,
 } from "@/lib/probeHistory"
 import { loadProbeHistory, nextProbeRefreshDelay, type ProbeHistoryResponse } from "@/lib/probeHistoryClient"
 import { cn } from "@/lib/utils"
@@ -317,47 +317,42 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
 
   const { response, loadedAt } = useProbeData(nodeId, visible)
   const targets = useMemo(
-    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 6),
+    () => targetsWithData(response ? probeHistoryTargets(response.probes, response.ping, loadedAt / 1_000) : [], 3),
     [response, loadedAt],
   )
-  const columns = splitTargetsIntoColumns(targets)
 
   return (
     <div ref={root} className="min-h-px" onClick={(event) => event.stopPropagation()}>
       {targets.length > 0 && (
         <div className="mt-4 border-t pt-3" aria-label="网络质量">
           <QualityLegend />
-          <div className="grid grid-cols-2 gap-x-2">
-            {columns.map((column, columnIndex) => (
-              <div key={columnIndex === 0 ? "left" : "right"} className="grid min-w-0 content-start gap-y-2.5">
-                {column.map((target) => {
-                  const latest = latestProbeSlot(target)
-                  const loss = activeWindowPacketLoss(
-                    response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id,
-                    loadedAt / 1_000,
-                  )
-                  return (
-                    <div key={target.id} className="min-w-0">
-                      <div className="mb-1 flex min-w-0 items-center gap-2 text-[11px]">
-                        <span className="min-w-0 flex-1 truncate font-medium">{target.name}</span>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
-                          <CurrentLoss loss={loss} />
-                        </div>
-                      </div>
-                      <HistoryBlocks
-                        history={target.history}
-                        kind="combined"
-                        animateNewest={false}
-                        onTooltip={setTooltip}
-                        latencyColor={getCardLatencyColor}
-                        compact
-                      />
+          <div className="grid gap-y-2.5">
+            {targets.map((target) => {
+              const latest = latestProbeSlot(target)
+              const loss = activeWindowPacketLoss(
+                response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id,
+                loadedAt / 1_000,
+              )
+              return (
+                <div key={target.id} className="min-w-0">
+                  <div className="mb-1 flex min-w-0 items-center gap-2 text-[11px]">
+                    <span className="min-w-0 flex-1 truncate font-medium">{target.name}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
+                      <CurrentLoss loss={loss} />
                     </div>
-                  )
-                })}
-              </div>
-            ))}
+                  </div>
+                  <HistoryBlocks
+                    history={target.history}
+                    kind="combined"
+                    animateNewest={false}
+                    onTooltip={setTooltip}
+                    latencyColor={getCardLatencyColor}
+                    compact
+                  />
+                </div>
+              )
+            })}
           </div>
           <ProbeTooltip tooltip={tooltip} />
         </div>
