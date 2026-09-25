@@ -2,14 +2,21 @@
   "name": "夜幕流光",
   "short": "glass-visitor",
   "description": "支持深色玻璃与极简风格的服务器状态监控面板",
-  "version": "2.1.2",
+  "version": "2.1.4",
   "config": [
+    {
+      "key": "default_dark",
+      "type": "boolean",
+      "label": "默认深色主题",
+      "default": true,
+      "help": "没有本地主题偏好时使用此默认值；用户可通过页头按钮切换并保存偏好。"
+    },
     {
       "key": "minimal_home",
       "type": "boolean",
       "label": "启用极简首页",
       "default": false,
-      "help": "开启后隐藏首页总览，并使用紧凑的节点卡片布局。"
+      "help": "开启后使用深色运维总览和紧凑的节点卡片布局。"
     }
   ],
   "author": "lzj565",

@@ -83,11 +83,11 @@ export function uptime(seconds: number): string {
 }
 
 /** Whole days until a date, negative once it has passed. */
-export function daysUntil(date?: string | null): number | null {
+export function daysUntil(date?: string | null, now = Date.now()): number | null {
   if (!date) return null
   const target = new Date(`${date}T00:00:00`).getTime()
   if (Number.isNaN(target)) return null
-  return Math.ceil((target - Date.now()) / 86400000)
+  return Math.ceil((target - now) / 86400000)
 }
 
 /**

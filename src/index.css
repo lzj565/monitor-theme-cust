@@ -254,6 +254,36 @@
   background-attachment: scroll;
 }
 
+/* The compact dashboard uses its own dark surface palette. Keep these tokens
+   inside the homepage root so the regular dashboard and node detail stay intact. */
+.dark .app-home-minimal {
+  --background: #2b2f34;
+  --foreground: #e5e9ef;
+  --card: #141b2b;
+  --card-foreground: #e5e9ef;
+  --popover: #1b2232;
+  --popover-foreground: #e5e9ef;
+  --primary: #dce2ea;
+  --primary-foreground: #141b2b;
+  --secondary: #1b2232;
+  --secondary-foreground: #e5e9ef;
+  --muted: #202735;
+  --muted-foreground: #a0a9b7;
+  --accent: #273143;
+  --accent-foreground: #eef2f7;
+  --border: rgb(226 232 240 / 9%);
+  --input: rgb(226 232 240 / 12%);
+  --panel: #141b2b;
+  --panel-hover: #1b2232;
+  --control: #1b2232;
+  --control-active: #273143;
+}
+
+.app-home-minimal {
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
 @media (min-width: 640px) {
   .visitor-card-expanded { width: 22.5rem; }
 }
@@ -318,24 +348,66 @@
 
   .app-home-minimal header {
     background-color: var(--background);
+    border-color: var(--border);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .minimal-summary-card {
+    min-height: 5.75rem;
+    border: 1px solid var(--border);
+    background-color: var(--card);
+    background-image: none;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .minimal-summary-icon {
+    opacity: 0.58;
+  }
+
+  .app-home-minimal .country-filter-item.is-active {
+    box-shadow: none;
+  }
+
+  .app-home-minimal .sort-status.is-active {
+    background: color-mix(in srgb, var(--metric-blue) 12%, var(--control-active));
+  }
+
+  .app-home-minimal .visitor-card-surface {
+    border-color: var(--border);
+    border-radius: 0.75rem;
+    background-image: none;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 
   .node-card-minimal {
     border: 1px solid var(--border);
-    border-radius: 1.5rem;
+    border-radius: 0.875rem;
     background-color: var(--card);
     background-image: none;
-    box-shadow: none;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 
   .node-card-minimal:hover {
-    transform: none;
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--foreground) 18%, var(--border));
+    background-color: var(--panel-hover);
+  }
+
+  .node-card-minimal-status {
+    min-height: 1.25rem;
     border-color: var(--border);
-    background-color: var(--card);
+    background-color: rgb(255 255 255 / 4%);
+  }
+
+  .node-card-minimal-system {
+    font-size: 0.6875rem;
   }
 
   .node-card-minimal.node-card-offline,
@@ -345,57 +417,58 @@
   }
 
   .node-card-resource-grid-minimal {
-    column-gap: clamp(1.5rem, 5vw, 4rem);
-    row-gap: 1.5rem;
+    column-gap: 0.875rem;
+    row-gap: 1rem;
   }
 
   .meter-label-minimal {
-    color: var(--foreground);
-    font-size: 1rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
     font-weight: 500;
   }
 
   .meter-label-minimal svg {
-    width: 1rem;
-    height: 1rem;
+    width: 0.875rem;
+    height: 0.875rem;
   }
 
   .meter-value-minimal {
-    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-size: clamp(1rem, 1.2vw, 1.125rem);
     font-weight: 600;
   }
 
   .meter-progress-minimal {
-    height: 0.75rem;
+    height: 0.25rem;
   }
 
   .meter-foot-minimal {
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    font-size: 0.6875rem;
   }
 
   .node-card-minimal-stats {
-    column-gap: 1rem;
+    min-width: 0;
   }
 
   .node-card-minimal-stat {
     display: grid;
     min-width: 0;
     align-content: center;
-    gap: 0.5rem;
-    min-height: 5rem;
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
+    gap: 0.375rem;
+    min-height: 3.5rem;
+    padding: 0.5rem 0.45rem;
+    border-radius: 0.625rem;
     background-color: var(--secondary);
-    font-size: 0.9375rem;
+    font-size: 0.6875rem;
   }
 
   .node-card-minimal-stat > span {
     display: flex;
     min-width: 0;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     white-space: nowrap;
+    line-height: 1.2;
   }
 
   .node-card-minimal-stat > span > svg {
@@ -403,14 +476,14 @@
   }
 
   .node-card-minimal-expiry {
-    justify-content: center;
+    align-content: center;
   }
 
   .node-probe-minimal-panel {
     min-width: 0;
-    padding: 0.875rem;
+    padding: 0.625rem;
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: 0.625rem;
     background-color: var(--secondary);
   }
 

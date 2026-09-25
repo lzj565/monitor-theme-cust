@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react"
-import { Activity, ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, Inbox, MemoryStick, Network, Send } from "lucide-react"
+import { Activity, ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, Inbox, MemoryStick, Network, Send, Server } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -42,7 +42,7 @@ function deployed(node: Node) {
  * has been absent -- the first question asked of an offline node. Both are
  * durations, so the badge keeps its shape either way.
  */
-export function Status({ node }: { node: Node }) {
+export function Status({ node, minimal = false }: { node: Node; minimal?: boolean }) {
   const down = node.last_seen ? Date.now() / 1000 - node.last_seen : 0
   const offline = !node.online && deployed(node)
   const label = node.online
@@ -57,6 +57,7 @@ export function Status({ node }: { node: Node }) {
       variant="outline"
       className={cn(
         "tnum shrink-0 gap-1.5 font-normal",
+        minimal && "node-card-minimal-status px-1.5 py-0.5 text-[10px]",
         offline ? "border-destructive/35 bg-destructive/8 text-destructive" : !node.online && "text-muted-foreground",
       )}
     >
@@ -148,7 +149,7 @@ export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen
       onClick={onOpen}
       className={cn(
         "min-w-0 cursor-pointer gap-0",
-        minimal ? "node-card-minimal rounded-[1.5rem] p-4" : "p-4 hover:-translate-y-0.5 hover:bg-panel-hover",
+        minimal ? "node-card-minimal rounded-[14px] !p-3.5" : "p-4 hover:-translate-y-0.5 hover:bg-panel-hover",
         offline ? "node-card-offline" : !minimal && "hover:border-metric-blue/35",
       )}
       role="button"
@@ -161,24 +162,23 @@ export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen
         <div className="flex min-w-0 items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {country && (
-              <span className="shrink-0 text-2xl leading-none" aria-hidden="true">
+              <span className={cn("shrink-0 leading-none", minimal ? "text-lg" : "text-2xl")} aria-hidden="true">
                 {countryCodeToFlag(country)}
               </span>
             )}
             <h3 className="min-w-0 flex-1 truncate font-medium">{node.name}</h3>
           </div>
-          <Status node={node} />
+          <Status node={node} minimal={minimal} />
         </div>
-        <div className={cn("flex min-w-0 items-center justify-between gap-3", minimal && "hidden")}>
+        <div className={cn("flex min-w-0 items-center justify-between gap-3", minimal && "node-card-minimal-system mt-0.5 gap-1.5")}>
+          {minimal && <Server className="size-3 shrink-0 text-muted-foreground" aria-hidden="true" />}
           <p
             className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground"
             title={displayedSystemInfo}
           >
             {displayedSystemInfo}
           </p>
-          <div className="shrink-0 text-right">
-            <Expiry node={node} />
-          </div>
+          {!minimal && <div className="shrink-0 text-right"><Expiry node={node} /></div>}
         </div>
       </div>
 
@@ -187,7 +187,10 @@ export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen
           independent probe summary below continues to update. */}
       {deployed(node) ? (
         <>
-          <div className={cn("mt-4 grid grid-cols-2", minimal ? "node-card-resource-grid-minimal gap-x-6 gap-y-5" : "gap-x-4 gap-y-4")}>
+          <div className={cn(
+            "grid grid-cols-2",
+            minimal ? "node-card-resource-grid-minimal mt-3 gap-x-3 gap-y-4" : "mt-4 gap-x-4 gap-y-4",
+          )}>
             {/* The core count belongs beside the word CPU: it is what the
                 percentage and the load averages are both measured against. */}
             <Meter
@@ -231,11 +234,11 @@ export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen
               progress={minimal ? undefined : <SegmentedProgress value={m ? percent(m.disk_used, m.disk_total) : 0} segments={16} tone="orange" className="mt-1.5" />}
             />
             <Meter
-              label={<span className="inline-flex items-center gap-1.5"><Gauge className="size-3.5 text-metric-green" />流量</span>}
+              label={<span className="inline-flex items-center gap-1.5"><Gauge className={cn("size-3.5", minimal ? "text-metric-purple" : "text-metric-green")} />流量</span>}
               pct={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : null}
               empty={FOREVER}
               foot={trafficFoot(node)}
-              tone="green"
+              tone={minimal ? "purple" : "green"}
               minimal={minimal}
               progress={minimal ? undefined : <SegmentedProgress value={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : 0} segments={16} tone="green" className="mt-1.5" />}
             />
@@ -275,18 +278,18 @@ export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen
           </div>
 
           {minimal ? (
-            <div className="node-card-minimal-stats mt-4 grid grid-cols-1 gap-2 min-[480px]:grid-cols-3">
+            <div className="node-card-minimal-stats mt-3 grid grid-cols-3 gap-1.5">
               <div className="node-card-minimal-stat">
                 <span aria-label="下行速率" className={cn("tnum", m ? rateTone[rateSeverity(m.net_rx)] : "text-muted-foreground")}>
-                  <ArrowDown className="size-3 text-metric-green" />{m ? rate(m.net_rx) : "—"}
+                  <ArrowDown className="size-3 text-metric-green" /><span className="min-w-0 truncate">{m ? rate(m.net_rx) : "—"}</span>
                 </span>
                 <span aria-label="上行速率" className={cn("tnum", m ? rateTone[rateSeverity(m.net_tx)] : "text-muted-foreground")}>
-                  <ArrowUp className="size-3 text-metric-blue" />{m ? rate(m.net_tx) : "—"}
+                  <ArrowUp className="size-3 text-metric-blue" /><span className="min-w-0 truncate">{m ? rate(m.net_tx) : "—"}</span>
                 </span>
               </div>
               <div className="node-card-minimal-stat">
-                <span><Inbox className="size-3 text-metric-green" />{bytes(node.total_rx)}</span>
-                <span><Send className="size-3 text-metric-blue" />{bytes(node.total_tx)}</span>
+                <span><Inbox className="size-3 text-metric-green" /><span className="min-w-0 truncate">{bytes(node.total_rx)}</span></span>
+                <span><Send className="size-3 text-metric-blue" /><span className="min-w-0 truncate">{bytes(node.total_tx)}</span></span>
               </div>
               <div className="node-card-minimal-stat node-card-minimal-expiry">
                 <span className="text-muted-foreground">到期</span>

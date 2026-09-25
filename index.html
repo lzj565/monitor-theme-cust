@@ -7,8 +7,13 @@
     <title>Monitor</title>
     <script>
       (() => {
-        const savedTheme = localStorage.getItem("theme")
-        if (savedTheme ? savedTheme === "dark" : true) document.documentElement.classList.add("dark")
+        const explicitTheme = localStorage.getItem("theme-explicit-choice")
+        const legacyTheme = localStorage.getItem("theme")
+        const savedTheme = explicitTheme === "dark" || explicitTheme === "light"
+          ? explicitTheme
+          : legacyTheme === "light" ? legacyTheme : null
+        const cachedDefaultDark = localStorage.getItem("theme-default-dark") !== "false"
+        document.documentElement.classList.toggle("dark", savedTheme ? savedTheme === "dark" : cachedDefaultDark)
       })()
     </script>
   </head>

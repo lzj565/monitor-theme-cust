@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react
 import { Moon, Sun, Wrench } from "lucide-react"
 
 import { CountryFilter } from "@/components/CountryFilter"
+import { MinimalSummary } from "@/components/MinimalSummary"
 import { NodeCard } from "@/components/NodeCard"
 import { Summary } from "@/components/Summary"
 import { Button } from "@/components/ui/button"
@@ -44,22 +45,48 @@ function useNodeRoute() {
   ] as const
 }
 
+const THEME_CHOICE_KEY = "theme-explicit-choice"
+const THEME_DEFAULT_KEY = "theme-default-dark"
+
+function readThemeChoice(): boolean | null {
+  const choice = localStorage.getItem(THEME_CHOICE_KEY)
+  if (choice === "dark") return true
+  if (choice === "light") return false
+
+  // Before explicit choices were tracked separately, the app saved its dark
+  // first-visit default. A legacy light value could only come from a user toggle.
+  return localStorage.getItem("theme") === "light" ? false : null
+}
+
 function useTheme() {
   const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem("theme")
-    // Prefer an explicitly saved choice, but make the first visit dark so the
-    // glass theme and its metric palette have a consistent default.
-    return saved ? saved === "dark" : true
+    const choice = readThemeChoice()
+    return choice ?? localStorage.getItem(THEME_DEFAULT_KEY) !== "false"
   })
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark)
-    localStorage.setItem("theme", dark ? "dark" : "light")
   }, [dark])
-  return [dark, () => setDark((d) => !d)] as const
+
+  const toggleTheme = useCallback(() => {
+    setDark((current) => {
+      const next = !current
+      const value = next ? "dark" : "light"
+      localStorage.setItem(THEME_CHOICE_KEY, value)
+      localStorage.setItem("theme", value)
+      return next
+    })
+  }, [])
+
+  const applyDefaultTheme = useCallback((defaultDark: boolean) => {
+    localStorage.setItem(THEME_DEFAULT_KEY, String(defaultDark))
+    if (readThemeChoice() === null) setDark(defaultDark)
+  }, [])
+
+  return { dark, toggleTheme, applyDefaultTheme }
 }
 
 export default function App() {
-  const [dark, toggleTheme] = useTheme()
+  const { dark, toggleTheme, applyDefaultTheme } = useTheme()
   const [minimalHome, setMinimalHome] = useState(false)
   const [me, setMe] = useState<Me | null>(null)
   const [meError, setMeError] = useState("")
@@ -91,15 +118,17 @@ export default function App() {
 
   useEffect(() => {
     let active = true
-    api<{ minimal_home?: unknown }>("/themes/glass-visitor/config")
+    api<{ minimal_home?: unknown; default_dark?: unknown }>("/themes/glass-visitor/config")
       .then((settings) => {
-        if (active) setMinimalHome(settings.minimal_home === true)
+        if (!active) return
+        setMinimalHome(settings.minimal_home === true)
+        applyDefaultTheme(typeof settings.default_dark === "boolean" ? settings.default_dark : true)
       })
       .catch(() => {
         if (active) setMinimalHome(false)
       })
     return () => { active = false }
-  }, [])
+  }, [applyDefaultTheme])
 
   useEffect(() => {
     if (open !== null) return
@@ -184,7 +213,13 @@ export default function App() {
               <Wrench /> {me.authed ? "进入后台" : "登录"}
             </a>
           </Button>
-          <Button variant="ghost" size="icon" onClick={toggleTheme} title="切换主题">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            title={dark ? "切换到浅色模式" : "切换到深色模式"}
+            aria-label={dark ? "切换到浅色模式" : "切换到深色模式"}
+          >
             {dark ? <Sun /> : <Moon />}
           </Button>
         </div>
@@ -208,14 +243,16 @@ export default function App() {
             </p>
           )
         ) : !nodes ? (
-          <div className={minimalHome ? "grid grid-cols-1 gap-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
+          <div className={minimalHome
+            ? "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-72" />
             ))}
           </div>
         ) : (
           <>
-            {!minimalHome && <Summary nodes={ordered} />}
+            {minimalHome ? <MinimalSummary nodes={ordered} /> : <Summary nodes={ordered} />}
             <CountryFilter
               stats={countryStats}
               selectedCountry={selectedCountry}
@@ -228,7 +265,9 @@ export default function App() {
             ) : filteredNodes.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">当前筛选暂无节点</p>
             ) : (
-              <div className={minimalHome ? "grid grid-cols-1 items-start gap-3" : "grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
+              <div className={minimalHome
+                ? "grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                : "grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
                 {filteredNodes.map((n: Node) => (
                   <NodeCard key={n.id} node={n} onOpen={() => go(n.id)} minimal={minimalHome} />
                 ))}
