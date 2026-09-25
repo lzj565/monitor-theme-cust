@@ -249,6 +249,11 @@
   box-shadow: 0 20px 60px rgb(15 23 42 / 18%), inset 0 1px 0 rgb(255 255 255 / 14%);
 }
 
+.minimal-home body {
+  background-image: none;
+  background-attachment: scroll;
+}
+
 @media (min-width: 640px) {
   .visitor-card-expanded { width: 22.5rem; }
 }
@@ -309,6 +314,104 @@
 
   .node-card-offline:hover {
     border-color: color-mix(in srgb, var(--destructive) 72%, var(--border));
+  }
+
+  .app-home-minimal header {
+    background-color: var(--background);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .node-card-minimal {
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background-color: var(--card);
+    background-image: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .node-card-minimal:hover {
+    transform: none;
+    border-color: var(--border);
+    background-color: var(--card);
+  }
+
+  .node-card-minimal.node-card-offline,
+  .node-card-minimal.node-card-offline:hover {
+    border-color: color-mix(in srgb, var(--destructive) 60%, var(--border));
+    box-shadow: none;
+  }
+
+  .node-card-resource-grid-minimal {
+    column-gap: clamp(1.5rem, 5vw, 4rem);
+    row-gap: 1.5rem;
+  }
+
+  .meter-label-minimal {
+    color: var(--foreground);
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .meter-label-minimal svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .meter-value-minimal {
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-weight: 600;
+  }
+
+  .meter-progress-minimal {
+    height: 0.75rem;
+  }
+
+  .meter-foot-minimal {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .node-card-minimal-stats {
+    column-gap: 1rem;
+  }
+
+  .node-card-minimal-stat {
+    display: grid;
+    min-width: 0;
+    align-content: center;
+    gap: 0.5rem;
+    min-height: 5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background-color: var(--secondary);
+    font-size: 0.9375rem;
+  }
+
+  .node-card-minimal-stat > span {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .node-card-minimal-stat > span > svg {
+    flex: 0 0 auto;
+  }
+
+  .node-card-minimal-expiry {
+    justify-content: center;
+  }
+
+  .node-probe-minimal-panel {
+    min-width: 0;
+    padding: 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background-color: var(--secondary);
   }
 
   .visitor-card-surface {

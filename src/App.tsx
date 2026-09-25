@@ -13,6 +13,13 @@ import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
 import { VisitorCard } from "@/components/VisitorCard"
 
 type Me = { authed: boolean; github: boolean; site_name: string; public_page: boolean }
+type PublicSettings = {
+  data?: {
+    theme_settings?: {
+      minimal_home?: unknown
+    }
+  }
+}
 
 // Split out because recharts is most of this bundle and the list page draws no
 // chart. The landing page is 242 kB rather than 629 kB (77 kB gzipped against
@@ -60,6 +67,7 @@ function useTheme() {
 
 export default function App() {
   const [dark, toggleTheme] = useTheme()
+  const [minimalHome, setMinimalHome] = useState(false)
   const [me, setMe] = useState<Me | null>(null)
   const [meError, setMeError] = useState("")
   const { nodes, error, closed } = useNodes()
@@ -87,6 +95,18 @@ export default function App() {
     // node opened: 2.6s click-to-chart on 4G against 1.4s unsplit, 1.7s warm.
     void loadDetail()
   }, [loadMe])
+
+  useEffect(() => {
+    let active = true
+    api<PublicSettings>("/public")
+      .then((response) => {
+        if (active) setMinimalHome(response.data?.theme_settings?.minimal_home === true)
+      })
+      .catch(() => {
+        if (active) setMinimalHome(false)
+      })
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (open !== null) return
@@ -136,6 +156,11 @@ export default function App() {
     document.title = [selected?.name, me?.site_name || "Monitor"].filter(Boolean).join(" · ")
   }, [selected?.name, me?.site_name])
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("minimal-home", open === null && minimalHome)
+    return () => document.documentElement.classList.remove("minimal-home")
+  }, [minimalHome, open])
+
   // Only while there is nothing else to show. Once `me` has loaded, a later
   // failure belongs beside the page rather than over it.
   if (!me) return (
@@ -148,8 +173,10 @@ export default function App() {
   if (!me.public_page && !me.authed) return null
 
   return (
-    <div className="min-h-svh">
-      <header className="sticky top-0 z-10 border-b border-border/70 bg-background/72 backdrop-blur-xl">
+    <div className={open === null && minimalHome ? "min-h-svh app-home-minimal" : "min-h-svh"}>
+      <header className={open === null && minimalHome
+        ? "sticky top-0 z-10 border-b border-border/70 bg-background"
+        : "sticky top-0 z-10 border-b border-border/70 bg-background/72 backdrop-blur-xl"}>
         <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 sm:px-6">
           {/* The site name is the way back to the list, so a node page needs
               no back button of its own. */}
@@ -170,7 +197,9 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] space-y-5 px-4 py-4 sm:px-6">
+      <main className={open === null && minimalHome
+        ? "mx-auto max-w-[1400px] space-y-4 px-4 py-4 sm:px-6"
+        : "mx-auto max-w-[1400px] space-y-5 px-4 py-4 sm:px-6"}>
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         {open !== null ? (
@@ -186,14 +215,14 @@ export default function App() {
             </p>
           )
         ) : !nodes ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className={minimalHome ? "grid grid-cols-1 gap-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-72" />
             ))}
           </div>
         ) : (
           <>
-            <Summary nodes={ordered} />
+            {!minimalHome && <Summary nodes={ordered} />}
             <CountryFilter
               stats={countryStats}
               selectedCountry={selectedCountry}
@@ -206,9 +235,9 @@ export default function App() {
             ) : filteredNodes.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">当前筛选暂无节点</p>
             ) : (
-              <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className={minimalHome ? "grid grid-cols-1 items-start gap-3" : "grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
                 {filteredNodes.map((n: Node) => (
-                  <NodeCard key={n.id} node={n} onOpen={() => go(n.id)} />
+                  <NodeCard key={n.id} node={n} onOpen={() => go(n.id)} minimal={minimalHome} />
                 ))}
               </div>
             )}

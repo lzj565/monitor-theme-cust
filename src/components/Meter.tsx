@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react"
+import { cn } from "@/lib/utils"
 
 type Tone = "blue" | "purple" | "orange" | "green" | "yellow"
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   empty?: ReactNode
   tone?: Tone
   color?: string
+  minimal?: boolean
 }
 
 const tones: Record<Tone, string> = {
@@ -23,7 +25,7 @@ const tones: Record<Tone, string> = {
  * One metric: name and percentage on top, bar in the middle, raw numbers
  * underneath. Monochrome, since the length of the bar carries the message.
  */
-export function Meter({ label, pct, foot, progress, empty = "—", tone = "blue", color }: Props) {
+export function Meter({ label, pct, foot, progress, empty = "—", tone = "blue", color, minimal = false }: Props) {
   // null means the metric has no ceiling to fill, so the bar stays empty rather
   // than reporting 0%. What replaces the percentage depends on the reason:
   // unknown for a node with no metrics, ∞ for a plan with no limit.
@@ -32,20 +34,20 @@ export function Meter({ label, pct, foot, progress, empty = "—", tone = "blue"
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-xs text-muted-foreground">{label}</span>
-        <span className={`tnum text-xs font-medium ${color ? "metric-resource-color" : ""}`} style={resourceStyle}>
+        <span className={cn("truncate text-xs text-muted-foreground", minimal && "meter-label-minimal")}>{label}</span>
+        <span className={cn("tnum text-xs font-medium", color && "metric-resource-color", minimal && "meter-value-minimal")} style={resourceStyle}>
           {pct === null ? empty : `${filled < 10 ? filled.toFixed(1) : filled.toFixed(0)}%`}
         </span>
       </div>
       {progress ?? (
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
+        <div className={cn("mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/80", minimal && "meter-progress-minimal")}>
           <div
             className={`h-full rounded-full ${color ? "metric-resource-fill" : tones[tone]} transition-[width] duration-500`}
             style={{ ...resourceStyle, width: `${filled}%` }}
           />
         </div>
       )}
-      <div className="tnum mt-1.5 truncate text-xs text-muted-foreground">{foot}</div>
+      <div className={cn("tnum mt-1.5 truncate text-xs text-muted-foreground", minimal && "meter-foot-minimal")}>{foot}</div>
     </div>
   )
 }

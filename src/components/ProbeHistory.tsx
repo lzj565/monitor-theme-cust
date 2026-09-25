@@ -49,7 +49,7 @@ function CurrentLoss({ loss }: { loss?: number }) {
 }
 
 function HistoryBlocks({
-  history, kind, animateNewest, onTooltip, latencyColor = getLatencyColor, compact = false,
+  history, kind, animateNewest, onTooltip, latencyColor = getLatencyColor, compact = false, prominent = false,
 }: {
   history: ProbeHistorySlot[]
   kind: "latency" | "loss" | "combined"
@@ -57,6 +57,7 @@ function HistoryBlocks({
   onTooltip: (next: TooltipState) => void
   latencyColor?: LatencyColor
   compact?: boolean
+  prominent?: boolean
 }) {
   const label = kind === "latency" ? "延迟" : kind === "loss" ? "丢包" : "网络质量"
   const describe = (slot: ProbeHistorySlot) => {
@@ -86,7 +87,7 @@ function HistoryBlocks({
 
   return (
     <div
-      className={cn("grid w-full", compact ? "h-1.5 gap-0.5" : "h-2.5 gap-px")}
+      className={cn("grid w-full", prominent ? "h-8 gap-1" : compact ? "h-1.5 gap-0.5" : "h-2.5 gap-px")}
       style={{ gridTemplateColumns: `repeat(${history.length}, minmax(1px, 1fr))` }}
     >
         {history.map((slot, index) => {
@@ -101,7 +102,7 @@ function HistoryBlocks({
               key={slot.startAt}
               aria-label={text}
               className={cn(
-                compact ? "h-1.5 min-w-0 rounded-[2px]" : "h-2.5 min-w-0 rounded-[2px]",
+                prominent ? "h-8 min-w-0 rounded-[2px]" : compact ? "h-1.5 min-w-0 rounded-[2px]" : "h-2.5 min-w-0 rounded-[2px]",
                 animateNewest && index === history.length - 1 && "probe-new-block",
               )}
               style={{ backgroundColor: color }}
@@ -294,7 +295,7 @@ export function ProbeHistory({ nodeId }: { nodeId: number }) {
   )
 }
 
-export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
+export function NodeProbeSummary({ nodeId, minimal = false }: { nodeId: number; minimal?: boolean }) {
   const root = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const [tooltip, setTooltip] = useState<TooltipState>(null)
@@ -323,7 +324,53 @@ export function NodeProbeSummary({ nodeId }: { nodeId: number }) {
 
   return (
     <div ref={root} className="min-h-px" onClick={(event) => event.stopPropagation()}>
-      {targets.length > 0 && (
+      {targets.length > 0 && minimal && (
+        <div className="node-probe-minimal mt-4 grid gap-2" aria-label="延迟和丢包历史">
+          {targets.map((target) => {
+            const latest = latestProbeSlot(target)
+            const loss = activeWindowPacketLoss(
+              response?.ping ?? [], response?.hourPing ?? [], response?.loss ?? {}, target.id,
+              loadedAt / 1_000,
+            )
+            return (
+              <div key={target.id} className="min-w-0">
+                <p className="mb-1.5 truncate text-xs text-muted-foreground">{target.name}</p>
+                <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+                  <div className="node-probe-minimal-panel">
+                    <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">延迟</span>
+                      <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
+                    </div>
+                    <HistoryBlocks
+                      history={target.history}
+                      kind="latency"
+                      animateNewest={false}
+                      onTooltip={setTooltip}
+                      latencyColor={getCardLatencyColor}
+                      prominent
+                    />
+                  </div>
+                  <div className="node-probe-minimal-panel">
+                    <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">丢包</span>
+                      <CurrentLoss loss={loss} />
+                    </div>
+                    <HistoryBlocks
+                      history={target.history}
+                      kind="loss"
+                      animateNewest={false}
+                      onTooltip={setTooltip}
+                      prominent
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          <ProbeTooltip tooltip={tooltip} />
+        </div>
+      )}
+      {targets.length > 0 && !minimal && (
         <div className="mt-4 border-t pt-3" aria-label="网络质量">
           <QualityLegend />
           <div className="grid gap-y-2.5">

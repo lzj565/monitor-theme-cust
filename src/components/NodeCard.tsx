@@ -137,7 +137,7 @@ function RuntimeStat({ icon: Icon, label, value, tone, valueTone }: {
   )
 }
 
-export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
+export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen: () => void; minimal?: boolean }) {
   const offline = !node.online && deployed(node)
   const m = node.metrics
   const country = getEffectiveCountry(node)
@@ -147,15 +147,16 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
     <Card
       onClick={onOpen}
       className={cn(
-        "min-w-0 cursor-pointer gap-0 p-4 hover:-translate-y-0.5 hover:bg-panel-hover",
-        offline ? "node-card-offline" : "hover:border-metric-blue/35",
+        "min-w-0 cursor-pointer gap-0",
+        minimal ? "node-card-minimal rounded-[1.5rem] p-4" : "p-4 hover:-translate-y-0.5 hover:bg-panel-hover",
+        offline ? "node-card-offline" : !minimal && "hover:border-metric-blue/35",
       )}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
     >
-      {/* Keep live status and expiry in separate rows so neither can drift into
-          the other row when the card becomes narrow. */}
+      {/* Keep the live status separate from system details in the current
+          layout; minimal mode moves expiry into its compact stats row. */}
       <div className="relative flex flex-col gap-1 overflow-visible">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -168,7 +169,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
           </div>
           <Status node={node} />
         </div>
-        <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className={cn("flex min-w-0 items-center justify-between gap-3", minimal && "hidden")}>
           <p
             className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground"
             title={displayedSystemInfo}
@@ -186,7 +187,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
           independent probe summary below continues to update. */}
       {deployed(node) ? (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
+          <div className={cn("mt-4 grid grid-cols-2", minimal ? "node-card-resource-grid-minimal gap-x-6 gap-y-5" : "gap-x-4 gap-y-4")}>
             {/* The core count belongs beside the word CPU: it is what the
                 percentage and the load averages are both measured against. */}
             <Meter
@@ -206,37 +207,41 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
                   ))}
                 </span>
               ) : "—"}
-              progress={<SegmentedProgress value={m?.cpu ?? 0} segments={16} tone="blue" className="mt-1.5" />}
               tone="blue"
               color={m ? usageColor(m.cpu) : undefined}
+              minimal={minimal}
+              progress={minimal ? undefined : <SegmentedProgress value={m?.cpu ?? 0} segments={16} tone="blue" className="mt-1.5" />}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><MemoryStick className="size-3.5 text-metric-purple" />内存</span>}
               pct={m ? percent(m.mem_used, m.mem_total) : null}
               foot={m ? pair(m.mem_used, m.mem_total) : bytes(node.mem_total)}
-              progress={<SegmentedProgress value={m ? percent(m.mem_used, m.mem_total) : 0} segments={16} tone="purple" className="mt-1.5" />}
               tone="purple"
               color={m ? usageColor(percent(m.mem_used, m.mem_total)) : undefined}
+              minimal={minimal}
+              progress={minimal ? undefined : <SegmentedProgress value={m ? percent(m.mem_used, m.mem_total) : 0} segments={16} tone="purple" className="mt-1.5" />}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><HardDrive className="size-3.5 text-metric-orange" />硬盘</span>}
               pct={m ? percent(m.disk_used, m.disk_total) : null}
               foot={m ? pair(m.disk_used, m.disk_total) : bytes(node.disk_total)}
-              progress={<SegmentedProgress value={m ? percent(m.disk_used, m.disk_total) : 0} segments={16} tone="orange" className="mt-1.5" />}
               tone="orange"
               color={m ? usageColor(percent(m.disk_used, m.disk_total)) : undefined}
+              minimal={minimal}
+              progress={minimal ? undefined : <SegmentedProgress value={m ? percent(m.disk_used, m.disk_total) : 0} segments={16} tone="orange" className="mt-1.5" />}
             />
             <Meter
               label={<span className="inline-flex items-center gap-1.5"><Gauge className="size-3.5 text-metric-green" />流量</span>}
               pct={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : null}
               empty={FOREVER}
               foot={trafficFoot(node)}
-              progress={<SegmentedProgress value={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : 0} segments={16} tone="green" className="mt-1.5" />}
               tone="green"
+              minimal={minimal}
+              progress={minimal ? undefined : <SegmentedProgress value={node.traffic_limit > 0 ? percent(monthUsage(node), node.traffic_limit) : 0} segments={16} tone="green" className="mt-1.5" />}
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className={cn("node-card-runtime-stats mt-4 grid grid-cols-2 gap-x-4 gap-y-2", minimal && "hidden")}>
             <RuntimeStat
               icon={MemoryStick}
               label="Swap"
@@ -269,6 +274,26 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
             />
           </div>
 
+          {minimal ? (
+            <div className="node-card-minimal-stats mt-4 grid grid-cols-1 gap-2 min-[480px]:grid-cols-3">
+              <div className="node-card-minimal-stat">
+                <span aria-label="下行速率" className={cn("tnum", m ? rateTone[rateSeverity(m.net_rx)] : "text-muted-foreground")}>
+                  <ArrowDown className="size-3 text-metric-green" />{m ? rate(m.net_rx) : "—"}
+                </span>
+                <span aria-label="上行速率" className={cn("tnum", m ? rateTone[rateSeverity(m.net_tx)] : "text-muted-foreground")}>
+                  <ArrowUp className="size-3 text-metric-blue" />{m ? rate(m.net_tx) : "—"}
+                </span>
+              </div>
+              <div className="node-card-minimal-stat">
+                <span><Inbox className="size-3 text-metric-green" />{bytes(node.total_rx)}</span>
+                <span><Send className="size-3 text-metric-blue" />{bytes(node.total_tx)}</span>
+              </div>
+              <div className="node-card-minimal-stat node-card-minimal-expiry">
+                <span className="text-muted-foreground">到期</span>
+                <Expiry node={node} />
+              </div>
+            </div>
+          ) : (
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-4 text-xs">
             <span className="tnum inline-flex min-w-0 items-center gap-1.5">
               <ArrowDown className="size-3 text-metric-green" />
@@ -295,6 +320,7 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
               <span className="truncate">{bytes(node.total_tx)}</span>
             </span>
           </div>
+          )}
         </>
       ) : (
         /* Never connected: nothing to plot, so the card stays short rather than
@@ -303,7 +329,10 @@ export function NodeCard({ node, onOpen }: { node: Node; onOpen: () => void }) {
           还没有接入。在后台生成安装命令并执行一次。
         </p>
       )}
-      <NodeProbeSummary nodeId={node.id} />
+      {minimal && !deployed(node) && (
+        <div className="mt-3 text-right"><Expiry node={node} /></div>
+      )}
+      <NodeProbeSummary nodeId={node.id} minimal={minimal} />
     </Card>
   )
 }
