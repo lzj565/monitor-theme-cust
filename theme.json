@@ -2,20 +2,16 @@
   "name": "夜幕流光",
   "short": "glass-visitor",
   "description": "支持深色玻璃与极简风格的服务器状态监控面板",
-  "version": "2.1.1",
-  "configuration": {
-    "type": "managed",
-    "name": "主题设置",
-    "data": [
-      {
-        "key": "minimal_home",
-        "name": "启用极简首页",
-        "type": "switch",
-        "default": false,
-        "help": "开启后隐藏首页总览，并使用紧凑的节点卡片布局。"
-      }
-    ]
-  },
+  "version": "2.1.2",
+  "config": [
+    {
+      "key": "minimal_home",
+      "type": "boolean",
+      "label": "启用极简首页",
+      "default": false,
+      "help": "开启后隐藏首页总览，并使用紧凑的节点卡片布局。"
+    }
+  ],
   "author": "lzj565",
   "url": "https://github.com/lzj565/monitor-theme-cust"
 }

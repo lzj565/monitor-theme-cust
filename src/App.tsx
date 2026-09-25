@@ -13,13 +13,6 @@ import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
 import { VisitorCard } from "@/components/VisitorCard"
 
 type Me = { authed: boolean; github: boolean; site_name: string; public_page: boolean }
-type PublicSettings = {
-  data?: {
-    theme_settings?: {
-      minimal_home?: unknown
-    }
-  }
-}
 
 // Split out because recharts is most of this bundle and the list page draws no
 // chart. The landing page is 242 kB rather than 629 kB (77 kB gzipped against
@@ -98,9 +91,9 @@ export default function App() {
 
   useEffect(() => {
     let active = true
-    api<PublicSettings>("/public")
-      .then((response) => {
-        if (active) setMinimalHome(response.data?.theme_settings?.minimal_home === true)
+    api<{ minimal_home?: unknown }>("/themes/glass-visitor/config")
+      .then((settings) => {
+        if (active) setMinimalHome(settings.minimal_home === true)
       })
       .catch(() => {
         if (active) setMinimalHome(false)

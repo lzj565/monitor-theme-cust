@@ -38,7 +38,7 @@ npm run dev
     └── index.html
 ```
 
-`theme.json` 的主题元数据字段为字符串；可选的 `configuration` 对象由 Hub 用于生成后台「主题设置」表单。
+`theme.json` 的主题元数据字段为字符串；可选的 `config` 数组由 Hub 用于生成后台「主题设置」表单。
 
 | 字段 | 含义 |
 |---|---|
@@ -48,7 +48,7 @@ npm run dev
 | `version` | 主题版本 |
 | `author` | 作者 |
 | `url` | 源码地址 |
-| `configuration` | 托管配置声明；设置值通过公开 API 提供给主题 |
+| `config` | 主题设置字段数组；Hub 按它生成表单，设置值由主题通过配置 API 读取 |
 
 每个 tag 的 release 里的 `theme.tar.gz` 解开就是这个目录——hub 构建时嵌入的是同一个包。
 
@@ -61,12 +61,12 @@ npm run dev
 | 接口 | 用途 |
 |---|---|
 | `GET /api/me` | 站点名、登录状态、公开页开关 |
-| `GET /api/public` | 当前主题设置（`data.theme_settings`） |
+| `GET /api/themes/{short}/config` | 当前主题保存的设置覆盖值 |
 | `GET /api/nodes` | 节点列表、实时指标和累计流量 |
 | `GET /api/nodes/{id}/metrics` | 历史指标和延迟记录 |
 | `GET /api/ws` | 每 2 秒推送一次节点快照的 WebSocket |
 
-首页极简风格由主题设置中的 `minimal_home` 开关控制，默认关闭。页面从 `GET /api/public` 的 `data.theme_settings.minimal_home` 读取；缺少设置或读取失败时显示当前风格。
+首页极简风格由主题设置中的 `minimal_home` 开关控制，默认关闭。Hub 后台「主题」页的主题卡片会显示设置按钮；页面从 `GET /api/themes/glass-visitor/config` 读取保存值，缺少设置或读取失败时显示普通风格。
 
 `metrics` 的三个查询参数都可省：
 
