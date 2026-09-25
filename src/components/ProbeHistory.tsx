@@ -325,7 +325,7 @@ export function NodeProbeSummary({ nodeId, minimal = false }: { nodeId: number; 
   return (
     <div ref={root} className="min-h-px" onClick={(event) => event.stopPropagation()}>
       {targets.length > 0 && minimal && (
-        <div className="node-probe-minimal mt-4 grid gap-2" aria-label="延迟和丢包历史">
+        <div className="node-probe-minimal mt-2.5 grid gap-2" aria-label="延迟和丢包历史">
           {targets.map((target) => {
             const latest = latestProbeSlot(target)
             const loss = activeWindowPacketLoss(
@@ -334,36 +334,26 @@ export function NodeProbeSummary({ nodeId, minimal = false }: { nodeId: number; 
             )
             return (
               <div key={target.id} className="min-w-0">
-                <p className="mb-1.5 truncate text-xs text-muted-foreground">{target.name}</p>
-                <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-                  <div className="node-probe-minimal-panel">
-                    <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">延迟</span>
+                <div className="mb-1 flex min-w-0 items-center justify-between gap-2 text-[11px]">
+                  <span className="min-w-0 truncate text-muted-foreground">{target.name}</span>
+                  <div className="flex shrink-0 items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">延迟</span>
                       <CurrentLatency slot={latest} latencyColor={getCardLatencyColor} colorUnit />
-                    </div>
-                    <HistoryBlocks
-                      history={target.history}
-                      kind="latency"
-                      animateNewest={false}
-                      onTooltip={setTooltip}
-                      latencyColor={getCardLatencyColor}
-                      prominent
-                    />
-                  </div>
-                  <div className="node-probe-minimal-panel">
-                    <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">丢包</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">丢包</span>
                       <CurrentLoss loss={loss} />
-                    </div>
-                    <HistoryBlocks
-                      history={target.history}
-                      kind="loss"
-                      animateNewest={false}
-                      onTooltip={setTooltip}
-                      prominent
-                    />
+                    </span>
                   </div>
                 </div>
+                <HistoryBlocks
+                  history={target.history}
+                  kind="combined"
+                  animateNewest={false}
+                  onTooltip={setTooltip}
+                  compact
+                />
               </div>
             )
           })}

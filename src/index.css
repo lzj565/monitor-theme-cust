@@ -479,14 +479,6 @@
     align-content: center;
   }
 
-  .node-probe-minimal-panel {
-    min-width: 0;
-    padding: 0.625rem;
-    border: 1px solid var(--border);
-    border-radius: 0.625rem;
-    background-color: var(--secondary);
-  }
-
   .visitor-card-surface {
     background-image:
       radial-gradient(circle at 0 0, color-mix(in srgb, var(--metric-cyan) 16%, transparent), transparent 48%),
