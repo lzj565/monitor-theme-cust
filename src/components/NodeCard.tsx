@@ -149,7 +149,7 @@ export function NodeCard({ node, onOpen, minimal = false }: { node: Node; onOpen
       onClick={onOpen}
       className={cn(
         "min-w-0 cursor-pointer gap-0",
-        minimal ? "node-card-minimal rounded-[14px] !p-3.5" : "p-4 hover:-translate-y-0.5 hover:bg-panel-hover",
+        minimal ? "node-card-minimal rounded-[14px] !p-3.5" : "p-4 hover:bg-panel-hover",
         offline ? "node-card-offline" : !minimal && "hover:border-metric-blue/35",
       )}
       role="button"
