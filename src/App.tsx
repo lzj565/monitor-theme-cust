@@ -195,7 +195,9 @@ export default function App() {
   if (!me.public_page && !me.authed) return null
 
   return (
-    <div className={open === null && minimalHome ? "min-h-svh app-home-minimal" : "min-h-svh"}>
+    <div className={open === null
+      ? minimalHome ? "min-h-svh app-home-minimal" : "min-h-svh app-home-glass"
+      : "min-h-svh"}>
       <header className={open === null && minimalHome
         ? "sticky top-0 z-10 border-b border-border/70 bg-background"
         : "sticky top-0 z-10 border-b border-border/70 bg-background/72 backdrop-blur-xl"}>

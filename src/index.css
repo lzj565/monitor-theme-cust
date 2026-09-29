@@ -249,6 +249,15 @@
   box-shadow: 0 20px 60px rgb(15 23 42 / 18%), inset 0 1px 0 rgb(255 255 255 / 14%);
 }
 
+/* Keep the glass homepage's translucent fills and gradients without live
+   backdrop sampling. Cover overlapping header/widget surfaces as well as cards.
+   Outside layers so this also overrides the header's backdrop-blur utility and
+   the visitor widget's unlayered filter declarations. */
+.app-home-glass :is(header, .glass-panel, .visitor-card-compact, .visitor-card-expanded) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 .minimal-home body {
   background-image: none;
   background-attachment: scroll;
