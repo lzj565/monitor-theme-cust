@@ -34,9 +34,9 @@ function StatTile({ icon: Icon, label, value, hint, tone }: {
   )
 }
 
-export function MinimalSummary({ nodes }: { nodes: Node[] }) {
+export function MinimalSummary({ nodes, group = null }: { nodes: Node[]; group?: string | null }) {
   const summary = summarizeMinimalHome(nodes)
-  const now = speedHistory.at(-1) ?? { rx: 0, tx: 0 }
+  const now = speedHistory.get(group)?.at(-1) ?? { rx: 0, tx: 0 }
 
   const tiles: { icon: typeof Server; label: string; value: string; hint?: string; tone: string }[] = [
     { icon: ArrowUp, label: "实时上行", value: rate(now.tx), tone: rateTone[rateSeverity(now.tx)] },

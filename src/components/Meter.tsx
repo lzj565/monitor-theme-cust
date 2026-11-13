@@ -28,7 +28,8 @@ const tones: Record<Tone, string> = {
 export function Meter({ label, pct, foot, progress, empty = "—", tone = "blue", color, minimal = false }: Props) {
   // null means the metric has no ceiling to fill, so the bar stays empty rather
   // than reporting 0%. What replaces the percentage depends on the reason:
-  // unknown for a node with no metrics, ∞ for a plan with no limit.
+  // unknown for a node with no metrics, ∞ for a plan with no limit. The bar stops
+  // at full while the figure does not, so a plan past its quota reads 209%.
   const filled = pct === null ? 0 : Math.min(100, Math.max(0, pct))
   const resourceStyle = color ? ({ "--resource-color": color } as CSSProperties) : undefined
   return (
@@ -36,7 +37,7 @@ export function Meter({ label, pct, foot, progress, empty = "—", tone = "blue"
       <div className="flex items-baseline justify-between gap-2">
         <span className={cn("truncate text-xs text-muted-foreground", minimal && "meter-label-minimal")}>{label}</span>
         <span className={cn("tnum text-xs font-medium", color && "metric-resource-color", minimal && "meter-value-minimal")} style={resourceStyle}>
-          {pct === null ? empty : `${filled < 10 ? filled.toFixed(1) : filled.toFixed(0)}%`}
+          {pct === null ? empty : `${pct < 10 ? pct.toFixed(1) : pct.toFixed(0)}%`}
         </span>
       </div>
       {progress ?? (

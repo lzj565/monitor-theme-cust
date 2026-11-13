@@ -1,8 +1,20 @@
-# monitor-theme-default
+# monitor-theme-cust
 
 [monitor](https://github.com/monitor-probe/monitor) 的内置默认主题，同时作为第三方主题的参考实现。
 
 React + Vite + shadcn/ui，黑白配色。
+
+## 上游来源
+
+本主题基于 [monitor-probe/monitor-theme-default](https://github.com/monitor-probe/monitor-theme-default) 定制。
+Git 上游远程名为 `upstream`，默认分支为 `main`；本次同步至 `a6051a3`。
+保留本仓库的玻璃/极简首页、访客信息、国家筛选与延迟历史等定制功能。
+
+```bash
+git remote add upstream https://github.com/monitor-probe/monitor-theme-default.git
+git fetch upstream --prune
+git merge upstream/main
+```
 
 ## 开发
 
@@ -18,12 +30,16 @@ monitor-hub --listen 127.0.0.1:9911 --db /tmp/monitor.db --site http://127.0.0.1
 
 ```bash
 npm ci
-npm run dev
+# Vite 将 /api 与 WebSocket 代理至这个 hub
+MONITOR_HUB=https://hub.example.com npm run dev
 ```
+
+不设 `MONITOR_HUB` 时代理至 `http://127.0.0.1:9911`。在本机起 hub、自己造节点的写法见文档站的
+[主题开发](https://monitor-document.pages.dev/dev/theme)页。
 
 构建产物位于 `dist/`。提交前运行 `npm run build && npm run lint && npm test`。
 
-`npm test` 校验数字格式化和实时指标的输入边界。没有测试框架，Node 自己剥掉
+`npm test` 校验数字格式化、坐标轴与时间刻度，以及实时指标的输入边界。没有测试框架，Node 自己剥掉
 类型，失败时退出码非零。
 
 ## 主题包
@@ -38,7 +54,7 @@ npm run dev
     └── index.html
 ```
 
-`theme.json` 的主题元数据字段为字符串；可选的 `config` 数组由 Hub 用于生成后台「主题设置」表单。
+`theme.json` 除 `config` 外的六个字段都要写，均为字符串；可选的 `config` 数组由 Hub 用于生成后台「主题设置」表单。
 
 | 字段 | 含义 |
 |---|---|
@@ -60,18 +76,20 @@ npm run dev
 
 | 接口 | 用途 |
 |---|---|
-| `GET /api/me` | 站点名、登录状态、公开页开关 |
-| `GET /api/themes/{short}/config` | 当前主题保存的设置覆盖值 |
+| `GET /api/me` | 站点名、登录状态、公开页开关、历史保留天数 |
 | `GET /api/nodes` | 节点列表、实时指标和累计流量 |
 | `GET /api/nodes/{id}/metrics` | 历史指标和延迟记录 |
-| `GET /api/ws` | 每 2 秒推送一次节点快照的 WebSocket |
+| `GET /api/ws` | 每 2 秒推送一次节点快照的 WebSocket；带 `?gzip` 时每帧 gzip 后以二进制消息发出 |
+| `GET /api/themes/{short}/config` | 站长改过的主题设置，只含与默认值不同的项 |
+
+主题自带设置界面时，站长登录后可以 `PUT` 同一地址保存。`config` 的声明格式、两个接口的规则与约定见文档站的[主题开发](https://monitor-document.pages.dev/dev/theme#主题设置)。
 
 首页极简风格由主题设置中的 `minimal_home` 开关控制，默认关闭。Hub 后台「主题」页的主题卡片会显示设置按钮；页面从 `GET /api/themes/glass-visitor/config` 读取保存值，缺少设置或读取失败时显示普通风格。
 
 `metrics` 的三个查询参数都可省：
 
-- `hours=N` 窗口宽度。**匿名上限 168，登录后 2160**，超出静默 clamp——降采样限的是响应行数，这个
-  上限限的是 hub 扫描多少行
+- `hours=N` 窗口宽度。**上限是 hub 的保留天数**（`/api/me` 的 `history_days`），登录与匿名相同，超出
+  静默 clamp，所以档位要按它生成。7 天以内取分钟明细，更宽取每小时的汇总
 - `points=W` 调用方画得下的点数，只会让 hub 抽得更稀，不会更密
 - `series=metrics|ping` 只取要画的那一半，省掉的那半原本占响应的三分之一到三分之二
 
@@ -90,6 +108,7 @@ npm run dev
 本主题用 `/node/{id}` 作为详情页。hub 的回落对它够用，但**hub 前面若有按路径做正向白名单的反代
 或 WAF，得把这个前缀放行**：从列表点进去只是 pushState，边缘看不见，刷新详情页才会真的请求
 `/node/{id}`，症状是「点进去正常，一刷新就被拦」。
+图标 `/favicon.svg` 和 `/apple-touch-icon.png` 同样要放行，后者被拦时 iOS 收藏和添加到主屏幕都没有图标。
 
 ## 许可
 

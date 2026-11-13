@@ -4,9 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Monitor</title>
     <script>
       (() => {
+        try {
         const explicitTheme = localStorage.getItem("theme-explicit-choice")
         const legacyTheme = localStorage.getItem("theme")
         const savedTheme = explicitTheme === "dark" || explicitTheme === "light"
@@ -14,6 +16,7 @@
           : legacyTheme === "light" ? legacyTheme : null
         const cachedDefaultDark = localStorage.getItem("theme-default-dark") !== "false"
         document.documentElement.classList.toggle("dark", savedTheme ? savedTheme === "dark" : cachedDefaultDark)
+        } catch { document.documentElement.classList.add("dark") }
       })()
     </script>
   </head>

@@ -83,13 +83,14 @@ function Spark({ series }: { series: { values: number[]; className: string }[] }
   )
 }
 
-export function Summary({ nodes }: { nodes: Node[] }) {
+export function Summary({ nodes, group = null }: { nodes: Node[]; group?: string | null }) {
   const summary = summarizeFleet(nodes)
   const onlineRate = nodes.length > 0 ? (summary.online / nodes.length) * 100 : 0
   const sum = (pick: (n: Node) => number) => nodes.reduce((total, n) => total + pick(n), 0)
   // The same push produced `nodes` and this sample, so the figure above the line
   // is that line's last point.
-  const now = speedHistory.at(-1) ?? { rx: 0, tx: 0 }
+  const history = speedHistory.get(group) ?? []
+  const now = history.at(-1) ?? { rx: 0, tx: 0 }
 
   return (
     <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
@@ -168,8 +169,8 @@ export function Summary({ nodes }: { nodes: Node[] }) {
         <div className="mt-auto pt-1">
           <Spark
             series={[
-              { values: speedHistory.map((s) => s.rx), className: "text-metric-green" },
-              { values: speedHistory.map((s) => s.tx), className: "text-metric-blue" },
+              { values: history.map((s) => s.rx), className: "text-metric-green" },
+              { values: history.map((s) => s.tx), className: "text-metric-blue" },
             ]}
           />
         </div>

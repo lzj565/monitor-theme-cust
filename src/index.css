@@ -8,7 +8,6 @@
 @import "tailwindcss" source(none);
 @source "../index.html";
 @source "../src";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -75,7 +74,10 @@
   --probe-empty: rgb(27 36 48 / 10%);
 }
 
+/* `color-scheme` draws the browser's own controls -- the checkbox,
+   scrollbars -- in the dark palette as well. */
 .dark {
+  color-scheme: dark;
   --background: #11161d;
   --foreground: #e2e6ed;
   --card: rgb(18 23 31 / 62%);
@@ -146,8 +148,6 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -158,7 +158,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
-  --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -344,6 +343,7 @@
   }
 
   .node-card-offline {
+    background-color: color-mix(in srgb, var(--destructive) 12%, var(--card));
     border-color: color-mix(in srgb, var(--destructive) 52%, var(--border));
     box-shadow:
       0 16px 42px rgb(10 18 30 / 10%),

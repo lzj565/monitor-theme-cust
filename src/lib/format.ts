@@ -43,16 +43,16 @@ export function pair(used: number, total: number): string {
  */
 export function axisBytes(v: number): string {
   if (!v || v < 0) return "0 B"
-  const unit = Math.min(Math.floor(Math.log(v) / Math.log(1024)), 5)
-  return bytes(v, v / 1024 ** unit >= 100 ? 0 : 1).replace(".0 ", " ")
+  return bytes(v, v / 1024 ** unitOf(v) >= 100 ? 0 : 1).replace(".0 ", " ")
 }
 
 export function rate(n: number): string {
   return `${bytes(n, 1)}/s`
 }
 
+/** Not capped: a plan used past its quota reads as 209%, not 100%. */
 export function percent(used: number, total: number): number {
-  return total > 0 ? Math.min(100, (used / total) * 100) : 0
+  return total > 0 ? (used / total) * 100 : 0
 }
 
 export type Severity = "green" | "yellow" | "red"
@@ -97,31 +97,53 @@ export function daysUntil(date?: string | null, now = Date.now()): number | null
  */
 export const FOREVER = "∞"
 
-const SYMBOLS: Record<string, string> = { USD: "$", CNY: "¥", EUR: "€", GBP: "£", JPY: "¥" }
+const MONEY = new Map<string, Intl.NumberFormat>()
 
+/**
+ * A price as zh-CN writes it: ¥12.00, US$12.00, HK$12.00, JP¥1,200, and the code
+ * ahead of the amount where the locale has no symbol, as in SGD 12.00. The
+ * locale is fixed so the figure does not vary with the browser's language, and
+ * so JPY reads JP¥, apart from CNY. Fractions stop at two places, the precision
+ * the price is entered in, not at the currency's minor unit: rounding to whole
+ * yen would show a price of 0.4 as JP¥0. A formatter costs about 100 µs to
+ * build, hence one per currency.
+ */
 export function money(amount: number, currency: string): string {
-  return `${SYMBOLS[currency] ?? ""}${amount.toFixed(2)}${SYMBOLS[currency] ? "" : ` ${currency}`}`
+  try {
+    let format = MONEY.get(currency)
+    if (!format) {
+      format = new Intl.NumberFormat("zh-CN", { style: "currency", currency, maximumFractionDigits: 2 })
+      MONEY.set(currency, format)
+    }
+    return format.format(amount)
+  } catch {
+    // Intl throws on anything but three letters, which hubs before 1.3.1 stored
+    // unchecked when written through the API.
+    return `${currency} ${amount.toFixed(2)}`.trim()
+  }
 }
 
-export const CYCLES: Record<string, string> = {
-  monthly: "月付",
-  quarterly: "季付",
-  semiannual: "半年付",
-  yearly: "年付",
-  biennial: "两年付",
-  triennial: "三年付",
-  once: "一次性",
+// Hub 1.3.0 and earlier store only these names; later hubs store any other
+// length as `<n>m`.
+const NAMED_CYCLES: Record<string, number> = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12, biennial: 24, triennial: 36 }
+const CYCLE_WORDS: Record<number, string> = { 1: "月付", 3: "季付", 6: "半年付", 12: "年付" }
+
+/** How a billing cycle reads: 月付, 5 年付, 18 个月付, 一次性. */
+export function cycle(billing: string): string {
+  if (billing === "once") return "一次性"
+  const months = NAMED_CYCLES[billing] ?? Number(/^(\d+)m$/.exec(billing)?.[1])
+  if (!months) return billing
+  return CYCLE_WORDS[months] ?? (months % 12 ? `${months} 个月付` : `${months / 12} 年付`)
 }
 
-// Hoisted out of `clock`: recharts calls a tickFormatter for every sample when
-// laying out an axis rather than once per tick drawn, and constructing an Intl
-// formatter per call was the largest single cost on the detail page -- 348 ms of
-// a 1531 ms click-to-chart. The zone now resolves once, which only an OS timezone
-// change under an open tab would notice.
+// Built once: recharts calls a tickFormatter for every sample when laying out an
+// axis rather than once per tick drawn, and an Intl formatter constructed per call
+// would be the largest single cost on the detail page -- 348 ms of a 1531 ms
+// click-to-chart. The zone resolves once, which only an OS timezone change under
+// an open tab would notice.
 //
-// Both take epoch milliseconds, which is what the charts feed their time axis:
-// recharts passes `scale="time"` to a d3 time scale, and a scale given seconds
-// reads 1.79e9 as three weeks past the epoch. The hub answers in seconds.
+// They take epoch milliseconds, as Date does. The hub answers in seconds, which
+// the charts convert as the rows arrive.
 const HHMM = new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit" })
 
 const MDHHMM = new Intl.DateTimeFormat("zh-CN", {
@@ -131,16 +153,46 @@ const MDHHMM = new Intl.DateTimeFormat("zh-CN", {
   minute: "2-digit",
 })
 
-export function clock(ms: number): string {
-  return HHMM.format(ms)
-}
+const MMDD = new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit" })
 
 /**
  * Axis ticks for a window `hours` wide. Beyond a day a bare "14:00" recurs each
  * midnight and the axis no longer indicates which day it refers to.
  */
 export function clockFor(hours: number): (ms: number) => string {
-  return hours <= 24 ? clock : (ms: number) => MDHHMM.format(ms)
+  return hours <= 24 ? HHMM.format : MDHHMM.format
+}
+
+/**
+ * The label format for an axis carrying `ticks` over a window `hours` wide: the
+ * date alone once every tick is a local midnight, where "00:00" beside each
+ * would say nothing, and `clockFor` otherwise. Decided by the ticks rather than
+ * the window, so a month dragged down to one day by the brush gets its times
+ * back.
+ */
+export function tickClock(ticks: number[], hours: number): (ms: number) => string {
+  const midnight = (t: number) => new Date(t).getHours() === 0 && new Date(t).getMinutes() === 0
+  return ticks.length > 0 && ticks.every(midnight) ? MMDD.format : clockFor(hours)
+}
+
+// Round chart windows, in hours: up to a week they are drawn from minute rows,
+// past it from the hub's hourly tier.
+const WINDOWS = [1, 6, 24, 168, 720, 2160]
+
+/**
+ * The chart windows offered for a hub keeping `days` of history, which `/api/me`
+ * reports as `history_days`: the round windows shorter than it, then the whole
+ * of it. A window past it would be narrowed by the hub without saying so, and
+ * drawn under a label claiming more than it holds. A round window the whole
+ * exceeds by less than a quarter is left out, as it would sit beside a tab of
+ * nearly the same width: 30 and 31 days, 90 and 92.
+ */
+export function windows(days: number): { hours: number; label: string }[] {
+  const whole = Math.max(1, Math.floor(days)) * 24
+  return [...WINDOWS.filter((h) => h * 1.25 <= whole), whole].map((hours) => ({
+    hours,
+    label: hours < 24 ? `${hours} 小时` : hours === 8760 ? "1 年" : `${hours / 24} 天`,
+  }))
 }
 
 /**
@@ -168,61 +220,61 @@ export function cpuName(name: string): string {
 // time scale's own ticks, whatever `scale` specifies. The axis is therefore given
 // the list explicitly: the smallest step from the ladder keeping the count under
 // `count`, phased on local midnight so a daily tick lands on the day even in a
-// zone offset by 30 or 45 minutes.
-const TICK_STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080].map((m) => m * 60_000)
+// zone offset by 30 or 45 minutes. Past what two weeks can cover, on the first of
+// a month: months differ in length, so no fixed step lands on one.
+const TICK_STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160].map((m) => m * 60_000)
+const TICK_MONTHS = [1, 2, 3, 6, 12]
 
 export function timeTicks(from: number, to: number, count = 8): number[] {
-  const step = TICK_STEPS.find((s) => (to - from) / s <= count) ?? TICK_STEPS[TICK_STEPS.length - 1]
+  const step = TICK_STEPS.find((s) => (to - from) / s <= count)
+  if (step === undefined) return monthTicks(from, to, count)
   const zone = new Date(from).getTimezoneOffset() * 60_000
   const ticks: number[] = []
-  for (let t = Math.ceil((from - zone) / step) * step + zone; t <= to; t += step) ticks.push(t)
+  for (let t = Math.ceil((from - zone) / step) * step + zone; t <= to; t += step) {
+    // Past a daylight-saving change a step of days lands an hour off midnight,
+    // so each such tick is set back on the nearest one.
+    const tick = step < 86_400_000 ? t : new Date(t + 43_200_000).setHours(0, 0, 0, 0)
+    if (tick <= to) ticks.push(tick)
+  }
   return ticks
 }
 
+// The first of every `every`th month within `[from, to]`, on months divisible
+// by `every` so a quarterly axis reads January, April, July.
+function monthTicks(from: number, to: number, count: number): number[] {
+  const start = new Date(from)
+  const every = TICK_MONTHS.find((k) => (to - from) / (k * 30 * 86_400_000) <= count) ?? 12
+  let month = start.getFullYear() * 12 + start.getMonth()
+  if (new Date(start.getFullYear(), start.getMonth(), 1).getTime() < from) month++
+  const ticks: number[] = []
+  for (month = Math.ceil(month / every) * every; ; month += every) {
+    const t = new Date(Math.floor(month / 12), month % 12, 1).getTime()
+    if (t > to) return ticks
+    ticks.push(t)
+  }
+}
+
 /**
- * A zero-anchored axis top for a quantity with no capacity to measure against: a
- * utilisation percentage, a load average, a transfer rate.
+ * A zero-anchored axis top for a utilisation percentage, which has no capacity
+ * to measure against.
  *
  * Derived from the gridline rather than the reverse -- the smallest round step
  * whose fourth multiple clears the data. Chosen the other way, the top is round
  * while the four gridlines beneath it are not: a ceiling of 75% draws lines at
- * 18.75 and 56.25. `base` is 1024 for a quantity written in binary units, so the
- * steps are round in the unit it is printed in.
+ * 18.75 and 56.25.
  *
  * `floor` keeps an idle machine looking idle: tracked exactly, a host that never
  * exceeds 0.4% CPU would get an axis of 0-0.4 and render every scheduler blip as
  * a peak.
  */
-export function axisTop(max: number, floor: number, base = 10, cap = Infinity): number {
+export function axisTop(max: number, floor: number, cap: number): number {
   const target = Math.min(cap, Math.max(max, floor)) / 4
-  const scale = base ** Math.floor(Math.log(target) / Math.log(base))
-  const step = LADDER[base].map((m) => m * scale).find((n) => n >= target)
-  return Math.min(cap, (step ?? target) * 4)
+  const scale = 10 ** Math.floor(Math.log10(target))
+  return Math.min(cap, LADDER.find((m) => m * scale >= target)! * scale * 4)
 }
 
-/**
- * Round multipliers, per base. A decade of base 1024 spans 1024, so a decimal
- * ladder cannot reach across one: with `scale` at 1024^k the largest step it
- * offers is 10 · 1024^k, leaving any target above that unmatched and falling
- * through to `top = max` -- no round step and no round gridlines, which is what
- * this function exists to provide. That held only for a peak within
- * [4, 40) · 1024^k, so a byte axis was more often wrong than right: 40 KB/s to
- * 4 MB/s, the ordinary range for a VPS, drew 2.9 MB with quarters at 732.4 KB.
- *
- * Powers of two for base 1024, with no half-step between them. The four ticks are
- * `step · [1, 2, 3, 4]`, so the third constrains the ladder: `3m` must land on a
- * label `axisBytes` can print, and it prints one decimal. Every power of two does
- * (3 · 512 Ki = 1.5 Mi); the half-steps 384 and 768 do not, their third gridline
- * being 1.125 Ki and 2.25 Ki, printed as "1.1" and "2.3" -- one incorrect label
- * beneath a top and two gridlines that are correct. Those two rungs would be
- * selected for peaks in (1, 1.5] and (2, 3] · 1024^k, that is 1-1.5 MB/s and
- * 2-3 MB/s, within the range named above. The cost of dropping them is a top that
- * may overshoot the data by 2x rather than 1.5x.
- */
-const LADDER: Record<number, number[]> = {
-  10: [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10],
-  1024: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
-}
+/** Round multipliers spanning a decade, so `axisTop` always finds one. */
+const LADDER = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10]
 
 /**
  * The gridlines for a zero-anchored axis: the top and the three quarters beneath
@@ -234,4 +286,112 @@ const LADDER: Record<number, number[]> = {
  */
 export function quarters(top: number): number[] {
   return [0, 0.25, 0.5, 0.75, 1].map((f) => top * f)
+}
+
+/**
+ * `rows` with an empty row in each gap over twice their usual spacing, where a
+ * chart breaks its line rather than drawing a straight one across a stretch with
+ * no samples -- a day offline would read as a day of steady load. The usual
+ * spacing is the median gap rather than the hub's bucket: an agent reporting
+ * every few minutes leaves a row only every few buckets.
+ */
+export function withGaps<T extends { ts: number }>(rows: T[]): (T | { ts: number })[] {
+  const gaps = rows.slice(1).map((r, i) => r.ts - rows[i].ts).sort((a, b) => a - b)
+  // The lower median: of two gaps, the shorter is the spacing and the longer
+  // the one in question.
+  const usual = gaps[(gaps.length - 1) >> 1]
+  return rows.flatMap((r, i) =>
+    i > 0 && r.ts - rows[i - 1].ts > 2 * usual ? [{ ts: (r.ts + rows[i - 1].ts) / 2 }, r] : [r],
+  )
+}
+
+/**
+ * The rungs of a logarithmic byte axis: 1, 10 and 100 of each binary unit, so
+ * every gridline prints as a round label -- 100 B, 1 KB, 10 KB, 100 KB, 1 MB.
+ * Adjacent rungs are 10 apart, or 10.24 across a unit, which draws as even.
+ */
+const rung = (i: number) => 1024 ** Math.floor(i / 3) * 10 ** (i % 3)
+
+/** The rung of `RATE_FLOOR`. */
+const FLOOR = 3
+
+/**
+ * The lowest rate drawn, 1 KB/s, since a log axis has no zero. An agent's own
+ * reports run below it, 0.2 to 0.7 KB/s each way across nine nodes over a week,
+ * so a node doing nothing else lies along the floor rather than drawing that
+ * traffic, magnified, as activity.
+ */
+export const RATE_FLOOR = rung(FLOOR)
+
+/**
+ * A logarithmic axis for transfer rates, from the rung at or below `low` to the
+ * rung at or above `high`, and no lower than `RATE_FLOOR`.
+ *
+ * At most six labels, counted down from the top, which is the one that says how
+ * far the axis reaches. Six label every rung from the floor to 100 MB/s, the
+ * bursts of a gigabit port, so an idle line lies on a labelled gridline; on a
+ * panel 120 px tall they sit 24 px apart. Wider spans take every other rung:
+ * 1 KB/s to 1 GB/s is seven, and a label on each would sit 20 px from the next.
+ */
+export function rateAxis(low: number, high: number): { domain: [number, number]; ticks: number[] } {
+  let bottom = FLOOR
+  while (rung(bottom + 1) <= Math.min(low, high)) bottom++
+  let top = bottom + 1
+  while (rung(top) < high) top++
+  const step = Math.ceil((top - bottom) / 5)
+  const ticks: number[] = []
+  for (let i = top; i >= bottom; i -= step) ticks.unshift(rung(i))
+  return { domain: [rung(bottom), rung(top)], ticks }
+}
+
+/**
+ * Hampel filter (Hampel 1974; MATLAB ships it as `hampel`). A sample more than
+ * `sigmas` robust deviations from the median of its window is replaced by that
+ * median, while everything else passes through unchanged, which is what
+ * separates it from a rolling median or a moving average: a period that is
+ * genuinely slow keeps its height, since its own neighbours are slow too.
+ *
+ * 1.4826 rescales the median absolute deviation to a standard deviation for
+ * normally distributed data; 3 sigma is the conventional cut.
+ *
+ * The deviation is floored at one millisecond, the resolution round trips are
+ * stored in. Unfloored, a window whose samples mostly repeat one value -- which
+ * is what a steady route looks like at that resolution -- has a deviation of
+ * exactly 0, and the test then either rejects nothing or rejects every sample
+ * that is not the median, depending on which way the comparison is written. Both
+ * fail on the very chart this exists for: a flat line with one 2 s bucket in it.
+ * The floor puts the cut at 4.5 ms for a line that does not move.
+ *
+ * A null is a timeout rather than a high reading, so it is neither replaced nor
+ * counted towards what its neighbours are compared against.
+ */
+export function despike(values: (number | null)[], window = 7, sigmas = 3): (number | null)[] {
+  const half = window >> 1
+  // ponytail: the window is re-collected per sample. A day of one probe is 1,438
+  // of them; a rolling structure would only pay off on a far longer window.
+  return values.map((v, i) => {
+    if (v === null) return v
+    const near = values.slice(Math.max(0, i - half), i + half + 1).filter((n) => n !== null)
+    const mid = median(near)
+    const mad = Math.max(median(near.map((n) => Math.abs(n - mid))), 1)
+    return Math.abs(v - mid) > sigmas * 1.4826 * mad ? mid : v
+  })
+}
+
+/** The middle of a sorted copy, the mean of the middle pair for an even count. */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  const half = sorted.length >> 1
+  return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2
+}
+
+/**
+ * Seconds since the node last reported, as the hub counts them: subtracted on
+ * the visitor's clock, a browser eight hours fast would show a node that
+ * dropped a minute ago as offline for eight hours. The browser's clock serves
+ * only a hub from before `last_seen_ago`.
+ */
+export function sinceSeen(node: { last_seen: number; last_seen_ago?: number | null }): number {
+  if (node.last_seen_ago !== undefined) return node.last_seen_ago ?? 0
+  return node.last_seen ? Date.now() / 1000 - node.last_seen : 0
 }

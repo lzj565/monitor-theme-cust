@@ -7,17 +7,20 @@ import { NodeCard } from "@/components/NodeCard"
 import { Summary } from "@/components/Summary"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, useNodes, type Node } from "@/lib/api"
+import { api, groupsOf, useNodes, type Node } from "@/lib/api"
 import { getCountryStats, getEffectiveCountry } from "@/lib/country"
 import { compareNodes, type NodeSortMode } from "@/lib/dashboard"
 import { loadVisitor, type VisitorInfo } from "@/lib/visitor"
+import { loadConfig } from "@/lib/config"
 import { VisitorCard } from "@/components/VisitorCard"
 
-type Me = { authed: boolean; github: boolean; site_name: string; public_page: boolean }
+// `history_days` is absent from hubs predating the hourly tier, which kept a
+// week for anonymous callers.
+type Me = { authed: boolean; github: boolean; site_name: string; public_page: boolean; history_days?: number }
 
 // Split out because recharts is most of this bundle and the list page draws no
-// chart. The landing page is 242 kB rather than 629 kB (77 kB gzipped against
-// 188 kB), with the rest fetched immediately after it paints.
+// chart. The landing page is 288 kB rather than 678 kB (95 kB gzipped against
+// 207 kB), with the rest fetched immediately after it paints.
 const loadDetail = () => import("@/components/NodeDetail").then((m) => ({ default: m.NodeDetail }))
 const NodeDetail = lazy(loadDetail)
 
@@ -38,47 +41,62 @@ function useNodeRoute() {
   return [
     id,
     (next: number | null) => {
-      history.pushState({}, "", next === null ? "/" : `/node/${next}`)
+      const path = next === null ? "/" : `/node/${next}`
+      // The site name leads to the list from the list as well, and each repeat
+      // would otherwise cost one more press of back.
+      if (location.pathname !== path) history.pushState({}, "", path)
       setId(next)
       scrollTo(0, 0)
     },
   ] as const
 }
 
+function readStorage(key: string) { try { return localStorage.getItem(key) } catch { return null } }
+function writeStorage(key: string, value: string) { try { localStorage.setItem(key, value) } catch { /* Session-only preference. */ } }
+
 const THEME_CHOICE_KEY = "theme-explicit-choice"
 const THEME_DEFAULT_KEY = "theme-default-dark"
 
 function readThemeChoice(): boolean | null {
-  const choice = localStorage.getItem(THEME_CHOICE_KEY)
+  const choice = readStorage(THEME_CHOICE_KEY)
   if (choice === "dark") return true
   if (choice === "light") return false
 
   // Before explicit choices were tracked separately, the app saved its dark
   // first-visit default. A legacy light value could only come from a user toggle.
-  return localStorage.getItem("theme") === "light" ? false : null
+  return readStorage("theme") === "light" ? false : null
 }
 
 function useTheme() {
   const [dark, setDark] = useState(() => {
     const choice = readThemeChoice()
-    return choice ?? localStorage.getItem(THEME_DEFAULT_KEY) !== "false"
+    return choice ?? readStorage(THEME_DEFAULT_KEY) !== "false"
   })
+
+  // Switched with every transition held. Cards, buttons and badges fade their
+  // colours over 150 ms while everything else changes at once, so a meter bar
+  // already in the dark palette would vanish into a card still white.
   useEffect(() => {
+    const hold = document.createElement("style")
+    hold.textContent = "*,*::before,*::after{transition:none!important}"
+    document.head.append(hold)
     document.documentElement.classList.toggle("dark", dark)
+    void document.body.offsetWidth
+    hold.remove()
   }, [dark])
 
   const toggleTheme = useCallback(() => {
     setDark((current) => {
       const next = !current
       const value = next ? "dark" : "light"
-      localStorage.setItem(THEME_CHOICE_KEY, value)
-      localStorage.setItem("theme", value)
+      writeStorage(THEME_CHOICE_KEY, value)
+      writeStorage("theme", value)
       return next
     })
   }, [])
 
   const applyDefaultTheme = useCallback((defaultDark: boolean) => {
-    localStorage.setItem(THEME_DEFAULT_KEY, String(defaultDark))
+    writeStorage(THEME_DEFAULT_KEY, String(defaultDark))
     if (readThemeChoice() === null) setDark(defaultDark)
   }, [])
 
@@ -87,9 +105,10 @@ function useTheme() {
 
 export default function App() {
   const { dark, toggleTheme, applyDefaultTheme } = useTheme()
-  const [minimalHome, setMinimalHome] = useState(false)
+  const [group, setGroup] = useState<string | null>(null)
   const [me, setMe] = useState<Me | null>(null)
   const [meError, setMeError] = useState("")
+  const [config, setConfig] = useState<Record<string, unknown> | null>(null)
   const { nodes, error, closed } = useNodes()
   const [open, go] = useNodeRoute()
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
@@ -98,17 +117,16 @@ export default function App() {
   const closeVisitor = useCallback(() => setVisitor(null), [])
 
   const loadMe = useCallback(() => {
-    // `|| "..."` because an empty message reads as no error: api() falls back to
-    // res.statusText, which HTTP/2 and HTTP/3 removed, so a bodiless 502 from a
-    // proxy arrives as "". The check below would then take the loading branch and
-    // the retry button would never render.
     return api<Me>("/me")
       .then((next) => { setMe(next); setMeError("") })
-      .catch((e: Error) => setMeError(e.message || "网络错误"))
+      .catch((e: Error) => setMeError(e.message))
   }, [])
 
   useEffect(() => {
     loadMe()
+    // Requested alongside /me, not after it. It never rejects: any failure
+    // yields the defaults.
+    void loadConfig().then(setConfig)
     // Warmed here rather than left to Suspense, which requests the chunk only
     // once a render reaches the detail view, itself waiting on /me. Without this
     // the split trades its first paint for a full-page skeleton over the first
@@ -116,19 +134,10 @@ export default function App() {
     void loadDetail()
   }, [loadMe])
 
+  const minimalHome = config?.minimal_home === true
   useEffect(() => {
-    let active = true
-    api<{ minimal_home?: unknown; default_dark?: unknown }>("/themes/glass-visitor/config")
-      .then((settings) => {
-        if (!active) return
-        setMinimalHome(settings.minimal_home === true)
-        applyDefaultTheme(typeof settings.default_dark === "boolean" ? settings.default_dark : true)
-      })
-      .catch(() => {
-        if (active) setMinimalHome(false)
-      })
-    return () => { active = false }
-  }, [applyDefaultTheme])
+    if (config) applyDefaultTheme(config.default_dark !== false)
+  }, [config, applyDefaultTheme])
 
   useEffect(() => {
     if (open !== null) return
@@ -155,12 +164,20 @@ export default function App() {
     () => [...ordered].sort(compareNodes(sortMode)),
     [ordered, sortMode],
   )
-  const countryStats = useMemo(() => getCountryStats(ordered), [ordered])
+  const groups = groupsOf(ordered)
+  const currentGroup = group !== null && (group === "" ? ordered.some((n) => !n.group) : groups.includes(group)) ? group : null
+  const grouped = useMemo(() => currentGroup === null ? sorted : sorted.filter((n) => (n.group ?? "") === currentGroup), [sorted, currentGroup])
+  useEffect(() => {
+    // Forget groups removed by a live update, matching the upstream tab behavior.
+    // oxlint-disable-next-line react/set-state-in-effect
+    if (group !== currentGroup) setGroup(currentGroup)
+  }, [group, currentGroup])
+  const countryStats = useMemo(() => getCountryStats(grouped), [grouped])
   const filteredNodes = useMemo(
     () => selectedCountry
-      ? sorted.filter((node) => getEffectiveCountry(node) === selectedCountry)
-      : sorted,
-    [selectedCountry, sorted],
+      ? grouped.filter((node) => getEffectiveCountry(node) === selectedCountry)
+      : grouped,
+    [selectedCountry, grouped],
   )
   const selected = ordered.find((n) => n.id === open)
 
@@ -237,14 +254,14 @@ export default function App() {
             <Skeleton className="h-96" />
           ) : selected ? (
             <Suspense fallback={<Skeleton className="h-96" />}>
-              <NodeDetail node={selected} />
+              <NodeDetail node={selected} historyDays={me.history_days ?? 7} />
             </Suspense>
           ) : (
             <p className="py-16 text-center text-sm text-muted-foreground">
               节点不存在或未公开。<button className="underline" onClick={() => go(null)}>返回列表</button>
             </p>
           )
-        ) : !nodes ? (
+        ) : !nodes || !config ? (
           <div className={minimalHome
             ? "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
             : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
@@ -254,7 +271,10 @@ export default function App() {
           </div>
         ) : (
           <>
-            {minimalHome ? <MinimalSummary nodes={ordered} /> : <Summary nodes={ordered} />}
+            {groups.length > 0 && <div role="group" aria-label="分组" className="flex gap-1 overflow-x-auto">
+              {[null, ...groups, ...(ordered.some((n) => !n.group) ? [""] : [])].map((value) => <Button key={value === null ? "*" : `=${value}`} size="sm" variant={currentGroup === value ? "secondary" : "ghost"} aria-pressed={currentGroup === value} onClick={() => setGroup(value)}>{value === null ? "全部" : value || "未分组"}</Button>)}
+            </div>}
+            {config.show_summary === true && (minimalHome ? <MinimalSummary nodes={grouped} group={currentGroup} /> : <Summary nodes={grouped} group={currentGroup} />)}
             <CountryFilter
               stats={countryStats}
               selectedCountry={selectedCountry}
